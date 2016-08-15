@@ -516,7 +516,25 @@ int* print_emit(int *i) {
 }
 
 int main(int argc, char *argv[]) {
-	FILE *fp = fopen(argv[1], "r");
+	int src = 0, debug = 0;
+	char *fname = NULL;
+	FILE *fp;
+	if(argc < 2) { printf("error!\n"); exit(-1); }
+	for(int i = 1; i < argc; i++) {
+		if(!strcmp(argv[i], "-s")) {
+			src = 1;
+		} else if(!strcmp(argv[i], "-d")) {
+			debug = 1;
+		} else {
+			char *j;
+			if(j = strrchr(argv[i], '.')) {
+				if(!strcmp(j, ".c")) fname = argv[i];
+				else { printf("error!\n"); exit(-1); }
+			} else { printf("error!\n"); exit(-1); }
+		}
+	}
+	if(!fname) { printf("error!\n"); exit(-1); }
+	if(!(fp = fopen(fname, "r"))) { printf("error!\n"); exit(-1); }
 
 	p = (char*)malloc(MAXSIZE * sizeof(char));
 	idls = id = (Id*)malloc(MAXSIZE * sizeof(Id));
@@ -542,27 +560,30 @@ int main(int argc, char *argv[]) {
 	*_main = getid("main") -> offset;
 	
 	//print
-	for(int *i = emit; i < e; i++) {
-		printf("%d\t", i - emit);
-		i = print_emit(i);
-		printf("\n");
+	if(src) {
+		for(int *i = emit; i < e; i++) {
+			printf("%d\t", i - emit);
+			i = print_emit(i);
+			printf("\n");
+		}
 	}
 	
 	//run..
 	int *store = (int*)malloc(MAXSIZE * sizeof(int));
 	*(SP + store) = *(BP + store) = AX + 1; //sp = AX + 1;
-	*(IP + store) = 0;int *pp = NULL; //ip = 0;
+	*(IP + store) = 0;//int *pp = NULL; //ip = 0;
 	while(1) {
-		printf("\n_%d_%d_%d_%d_\t", *(IP + store), *(BP + store), *(SP + store), *(store + AX));
-		print_emit(emit + *(IP + store));
-		
+		if(debug) {
+			printf("\n_%d_%d_%d_%d_\t", *(IP + store), *(BP + store), *(SP + store), *(store + AX));
+			print_emit(emit + *(IP + store));
+		}
 		int *ip = emit + (*(IP + store))++;
 		if(*ip == PUSH) {
 			int opr = *(emit + (*(IP + store))++);
-			*(store + (*(SP + store))++) = *(store + opr);printf(" %d",*(store+*(SP+store)-1));
+			*(store + (*(SP + store))++) = *(store + opr);//printf(" %d",*(store+*(SP+store)-1));
 		} else if(*ip == POP) {
 			int opr = *(emit + (*(IP + store))++);
-			*(store + opr) = *(store + (--*(SP + store)));printf(" %d",*(store+*(SP+store)));
+			*(store + opr) = *(store + (--*(SP + store)));//printf(" %d",*(store+*(SP+store)));
 		} else if(*ip == SET) {
 			int opr1 = *(emit + (*(IP + store))++);
 			int opr2 = *(emit + (*(IP + store))++);
@@ -633,13 +654,13 @@ int main(int argc, char *argv[]) {
 			*(store + AX) = (int)(data + opr);
 		} else if(*ip == ADL) { //address local
 			int opr = *(store + AX);
-			*(store + AX) = (int)(store + *(BP + store) + opr);pp=(int*)*(store + AX);
+			*(store + AX) = (int)(store + *(BP + store) + opr);//pp=(int*)*(store + AX);
 		} else if(*ip == VAL) {
 			int opr = *(store + AX);
 			*(store + AX) = *(int*)opr;
 		} else if(*ip == EXIT) {
 			break;
-		}if(pp)printf(" >>%d",*p);
+		}//if(pp)printf(" >>%d",*p);
 	}
 	printf("\n%d\n",*(store + AX));
 	return 0;

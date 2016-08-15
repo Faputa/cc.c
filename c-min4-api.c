@@ -540,6 +540,7 @@ int* print_emit(int *i) {
 int main(int argc, char *argv[]) {
 	int src = 0, debug = 0;
 	char *fname = NULL;
+	FILE *fp;
 	if(argc < 2) { printf("error!\n"); exit(-1); }
 	for(int i = 1; i < argc; i++) {
 		if(!strcmp(argv[i], "-s")) {
@@ -555,7 +556,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	if(!fname) { printf("error!\n"); exit(-1); }
-	FILE *fp = fopen(fname, "r");
+	if(!(fp = fopen(fname, "r"))) { printf("error!\n"); exit(-1); }
 
 	p = (char*)malloc(MAXSIZE * sizeof(char));
 	idls = id = (Id*)malloc(MAXSIZE * sizeof(Id));
