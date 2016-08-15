@@ -570,9 +570,7 @@ int main(int argc, char *argv[]) {
 		"print", "endl", "space", "scan"
 	};
 	for(int i = 0; i < sizeof(api) / sizeof(*api); i++) {
-		tks = api[i];
-		setid(tks, FUN);
-		id -> type = API;
+		setid(api[i], API);
 		id -> offset = PRINT + i;
 	}
 	next();
