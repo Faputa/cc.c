@@ -665,6 +665,6 @@ int main(int argc, char *argv[]) {
 			break;
 		}//if(pp)printf(" >>%d",*p);
 	}
-	printf("\n%d\n",*(store + AX));
+	printf("\n%d",*(store + AX));
 	return 0;
 }
