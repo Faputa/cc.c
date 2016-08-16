@@ -67,7 +67,9 @@ void next() {//printf("%c\n",*p);
 	}
 }
 int main(int argc, char *argv[]) {
-	FILE *fp = fopen(argv[1], "r");
+	FILE *fp;
+	if(argc != 2) { printf("error!\n"); exit(-1); }
+	if(!(fp = fopen(argv[1], "r"))) { printf("error!\n"); exit(-1); }
 	p = (char*)malloc(MAXSIZE * sizeof(char));
 	int i = fread(p, sizeof(char), MAXSIZE, fp);
 	p[i] = '\0';printf("%s",p);
