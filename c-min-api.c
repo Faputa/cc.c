@@ -131,8 +131,8 @@ void setid(char *tks, int type) {
 	} else {
 		id -> offset = last_id -> offset;
 		if(last_id -> type == INT) id -> offset += 1;
-	}/*打印符号表
-	for(Id*i=idls;i<=id;i++){
+	}
+	/*for(Id*i=idls;i<=id;i++){ //打印符号表
 		if(i->csmk==GLO)printf("_GLO");
 		else if(i->csmk==FUN)printf("_FUN");
 		else if(i->csmk==LOC)printf("_LOC");
