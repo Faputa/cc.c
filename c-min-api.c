@@ -37,7 +37,7 @@ enum {
 	//other integer
 	ID, GLO, LOC,// ARG,
 	//opcode
-	PUSH, POP, SET, INC, DEC, JMP, JZ, MOV, ADD, SUB, MUL, DIV, ASS, EQ, HIG, LOW, AND, OR, NOT, ADF, ADG, ADL, VAL, EXIT,
+	PUSH, POP, SET, INC, DEC, JMP, JZ, MOV, ADD, SUB, MUL, DIV, MOD, ASS, EQ, HIG, LOW, AND, OR, NOT, AG, AL, VAL, EXIT,
 	PRINT, ENDL, SPACE, SCAN,
 	//reg
 	IP = 0, BP, SP, AX
@@ -166,10 +166,10 @@ int lev(char *opr) { //优先级越高lev越大，其他符号lev为0
 		")",
 		"", "=",
 		"", "&&", "||", "!",
-		"", "==",
+		"", "==", "!=",
 		"", ">", "<", ">=", "<=",
 		"", "+", "-",
-		"", "*", "/"
+		"", "*", "/", "%"
 	};
 	int lev = 1;
 	for(int i = 0; i < sizeof(oprs) / sizeof(*oprs); i++) {
@@ -224,8 +224,7 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 			}
 			*e++ = callee;
 		} else if(type == INT) {
-			*e++ = SET; *e++ = AX; *e++ = this_id -> offset;
-			*e++ = this_id -> class == GLO ? ADG: ADL; //根据偏移量获取真实地址
+			*e++ = this_id -> class == GLO ? AG: AL; *e++ = this_id -> offset; //根据偏移量获取真实地址
 			is_var = 1;
 		}
 	} else if(!strcmp(tks, "(")) {
@@ -247,13 +246,18 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 		next();
 		if(type != expr(opr)) { printf("error!\n"); exit(-1); }
 		if (!strcmp(opr, "+")) *e++ = ADD;
-		else if(!strcmp(opr, "*")) *e++ = MUL;
 		else if(!strcmp(opr, "-")) *e++ = SUB;
+		else if(!strcmp(opr, "*")) *e++ = MUL;
 		else if(!strcmp(opr, "/")) *e++ = DIV;
+		else if(!strcmp(opr, "%")) *e++ = MOD;
 		else if(!strcmp(opr, "=")) *e++ = ASS;
 		else if(!strcmp(opr, "==")) *e++ = EQ;
 		else if(!strcmp(opr, ">")) *e++ = HIG;
 		else if(!strcmp(opr, "<")) *e++ = LOW;
+		else if(!strcmp(opr, "!=")) {
+			*e++ = EQ;
+			*e++ = NOT;
+		}
 		else if(!strcmp(opr, ">=")) {
 			*e++ = LOW;
 			*e++ = NOT;
@@ -494,7 +498,7 @@ int* print_emit(int *i) {
 		printf("JMP  ");
 		printf("[%d]", *++i);
 	} else if(*i == JZ) {
-		printf("JZ ");
+		printf("JZ   ");
 		printf("[%d]", *++i);
 	} else if(*i == MOV) {
 		printf("MOV  ");
@@ -507,6 +511,7 @@ int* print_emit(int *i) {
 	else if(*i == SUB) printf("SUB");
 	else if(*i == MUL) printf("MUL");
 	else if(*i == DIV) printf("DIV");
+	else if(*i == MOD) printf("MOD");
 	else if(*i == ASS) printf("ASS");
 	else if(*i == EQ) printf("EQ");
 	else if(*i == HIG) printf("HIG");
@@ -514,10 +519,13 @@ int* print_emit(int *i) {
 	else if(*i == AND) printf("AND");
 	else if(*i == OR) printf("OR");
 	else if(*i == NOT) printf("NOT");
-	else if(*i == ADF) printf("ADF");
-	else if(*i == ADG) printf("ADG");
-	else if(*i == ADL) printf("ADL");
-	else if(*i == VAL) printf("VAL");
+	else if(*i == AG) {
+		printf("AG   ");
+		printf("%d", *++i);
+	} else if(*i == AL) {
+		printf("AL   ");
+		printf("%d", *++i);
+	} else if(*i == VAL) printf("VAL");
 	else if(*i == PRINT) printf("PRINT");
 	else if(*i == ENDL) printf("ENDL");
 	else if(*i == SPACE) printf("SPACE");
@@ -597,99 +605,103 @@ int main(int argc, char *argv[]) {
 			printf("\n_%d_%d_%d_%d_\t", *(IP + store), *(BP + store), *(SP + store), *(store + AX));
 			print_emit(emit + *(IP + store));
 		}
-		int *ip = emit + (*(IP + store))++;
-		if(*ip == PUSH) {
+		int i = *(emit + (*(IP + store))++);
+		if(i == PUSH) {
 			int opr = *(emit + (*(IP + store))++);
 			*(store + (*(SP + store))++) = *(store + opr);//printf(" %d",*(store+*(SP+store)-1));
-		} else if(*ip == POP) {
+		} else if(i == POP) {
 			int opr = *(emit + (*(IP + store))++);
 			*(store + opr) = *(store + (--*(SP + store)));//printf(" %d",*(store+*(SP+store)));
-		} else if(*ip == SET) {
+		} else if(i == SET) {
 			int opr1 = *(emit + (*(IP + store))++);
 			int opr2 = *(emit + (*(IP + store))++);
 			*(store + opr1) = opr2;
-		} else if(*ip == INC) {
+		} else if(i == INC) {
 			int opr1 = *(emit + (*(IP + store))++);
 			int opr2 = *(emit + (*(IP + store))++);
 			*(store + opr1) += opr2;
-		} else if(*ip == DEC) {
+		} else if(i == DEC) {
 			int opr1 = *(emit + (*(IP + store))++);
 			int opr2 = *(emit + (*(IP + store))++);
 			*(store + opr1) -= opr2;
-		} else if(*ip == JMP) {
+		} else if(i == JMP) {
 			int opr = *(emit + (*(IP + store))++);
 			*(IP + store) = opr;
-		} else if(*ip == JZ) { //jump if zero
+		} else if(i == JZ) { //jump if zero
 			int opr = *(emit + (*(IP + store))++);
 			if(!*(store + AX)) *(IP + store) = opr;
-		} else if(*ip == MOV) {
+		} else if(i == MOV) {
 			int opr1 = *(emit + (*(IP + store))++);
 			int opr2 = *(emit + (*(IP + store))++);
 			*(store + opr1) = *(store + opr2);
-		} else if(*ip == ADD) {
+		} else if(i == ADD) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr1 + opr2;
-		} else if(*ip == SUB) {
+		} else if(i == SUB) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 - opr1;
-		} else if(*ip == MUL) {
+		} else if(i == MUL) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr1 * opr2;
-		} else if(*ip == DIV) {
+		} else if(i == DIV) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 / opr1;
-		} else if(*ip == ASS) {
+		} else if(i == MOD) {
+			int opr1 = *(store + AX);
+			int opr2 = *(store + (--*(SP + store)));
+			*(store + AX) = opr2 % opr1;
+		} else if(i == ASS) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(int*)opr2 = opr1;
-		} else if(*ip == EQ) {
+		} else if(i == EQ) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 == opr1;
-		} else if(*ip == HIG) {
+		} else if(i == HIG) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 > opr1;
-		} else if(*ip == LOW) {
+		} else if(i == LOW) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 < opr1;
-		} else if(*ip == AND) {
+		} else if(i == AND) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 && opr1;
-		} else if(*ip == OR) {
+		} else if(i == OR) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 || opr1;
-		} else if(*ip == NOT) {
+		} else if(i == NOT) {
 			int opr = *(store + AX);
 			*(store + AX) = !opr;
-		} else if(*ip == ADG) { //address global
-			int opr = *(store + AX);
+		} else if(i == AG) { //address global
+			int opr = *(emit + (*(IP + store))++);
 			*(store + AX) = (int)(data + opr);
-		} else if(*ip == ADL) { //address local
-			int opr = *(store + AX);
+		} else if(i == AL) { //address local
+			int opr = *(emit + (*(IP + store))++);
 			*(store + AX) = (int)(store + *(BP + store) + opr);//pp=(int*)*(store + AX);
-		} else if(*ip == VAL) {
+		} else if(i == VAL) {
 			int opr = *(store + AX);
 			*(store + AX) = *(int*)opr;
-		} else if(*ip == PRINT) {
+		} else if(i == PRINT) {
 			int opr = *(store + (--*(SP + store)));
 			printf("%d", opr);
-		} else if(*ip == ENDL) {
+		} else if(i == ENDL) {
 			printf("\n");
-		} else if(*ip == SPACE) {
+		} else if(i == SPACE) {
 			printf(" ");
-		} else if(*ip == SCAN) {
+		} else if(i == SCAN) {
 			int opr;
 			scanf("%d", &opr);
 			*(store + AX) = opr;
-		} else if(*ip == EXIT) {
+		} else if(i == EXIT) {
 			break;
 		}//if(pp)printf(" >>%d",*p);
 	}
