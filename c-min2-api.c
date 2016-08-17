@@ -49,8 +49,8 @@ void setid(char *tks, int type);
 Id* getid(char *tks);
 //void infunc();
 //void outfunc();
-void inlocal();
-void outlocal();
+void inblock();
+void outblock();
 void declare(int env);
 void stmt();
 int lev(char *opr);
@@ -148,11 +148,11 @@ Id* getid(char *tks) {
 	printf("error!\n"); exit(-1);
 }
 
-void inlocal() {
+void inblock() {
 	(++id) -> csmk = LOC;
 }
 
-void outlocal() {
+void outblock() {
 	while(id -> csmk != LOC) {
 		//*e++ = POP; *e++ = AX;
 		//*e++ = DEC; *e++ = SP; *e++ = 1;
@@ -275,14 +275,14 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 
 void stmt() {
 	if(!strcmp(tks, "{")) {
-		inlocal();
+		inblock();
 		next();
 		while(strcmp(tks, "}")) {
 			if(tki == Int) declare(LOC);
 			else stmt();
 			next();
 		}
-		outlocal();
+		outblock();
 	} else if(tki == If) {
 		next(); if(strcmp(tks, "(")) { printf("error!\n"); exit(-1); }
 		next(); expr(")");
@@ -318,7 +318,7 @@ void stmt() {
 		*e++ = JMP; *e++ = _e1 - emit;
 		*_e2 = e - emit;
 	} else if(tki == For) {
-		inlocal();
+		inblock();
 		next();
 		if(!strcmp(tks, "(")) next(); else { printf("error!\n"); exit(-1); }
 		if(strcmp(tks, ";")) {
@@ -347,7 +347,7 @@ void stmt() {
 		stmt();
 		*e++ = JMP; *e++ = _e2 - emit;
 		*_e4 = e - emit;
-		outlocal();
+		outblock();
 	} else if(tki == While) {
 		int *_e1 = e;
 		next(); if(strcmp(tks, "(")) { printf("error!\n"); exit(-1); }
