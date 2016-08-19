@@ -37,7 +37,7 @@ enum {
 	//other integer
 	ID, GLO, LOC,// ARG,
 	//opcode
-	PUSH, POP, SET, INC, DEC, JMP, JZ, MOV, ADD, SUB, MUL, DIV, MOD, ASS, EQ, HIG, LOW, AND, OR, NOT, AG, AL, VAL, EXIT,
+	PUSH, POP, SET, INC, DEC, JMP, JZ, MOV, ADD, SUB, MUL, DIV, MOD, ASS, EQ, GT, LT, AND, OR, NOT, AG, AL, VAL, EXIT,
 	PRINT, ENDL, SPACE, SCAN,
 	//reg
 	IP = 0, BP, SP, AX
@@ -255,18 +255,18 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 		else if(!strcmp(opr, "%")) *e++ = MOD;
 		else if(!strcmp(opr, "=")) *e++ = ASS;
 		else if(!strcmp(opr, "==")) *e++ = EQ;
-		else if(!strcmp(opr, ">")) *e++ = HIG;
-		else if(!strcmp(opr, "<")) *e++ = LOW;
+		else if(!strcmp(opr, ">")) *e++ = GT; //greater than
+		else if(!strcmp(opr, "<")) *e++ = LT; //less than
 		else if(!strcmp(opr, "!=")) {
 			*e++ = EQ;
 			*e++ = NOT;
 		}
 		else if(!strcmp(opr, ">=")) {
-			*e++ = LOW;
+			*e++ = LT;
 			*e++ = NOT;
 		}
 		else if(!strcmp(opr, "<=")) {
-			*e++ = HIG;
+			*e++ = GT;
 			*e++ = NOT;
 		}
 		else if(!strcmp(opr, "&&")) *e++ = AND;
@@ -522,8 +522,8 @@ int* print_emit(int *i) {
 	else if(*i == MOD) printf("MOD");
 	else if(*i == ASS) printf("ASS");
 	else if(*i == EQ) printf("EQ");
-	else if(*i == HIG) printf("HIG");
-	else if(*i == LOW) printf("LOW");
+	else if(*i == GT) printf("GT");
+	else if(*i == LT) printf("LT");
 	else if(*i == AND) printf("AND");
 	else if(*i == OR) printf("OR");
 	else if(*i == NOT) printf("NOT");
@@ -670,11 +670,11 @@ int main(int argc, char *argv[]) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 == opr1;
-		} else if(i == HIG) {
+		} else if(i == GT) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 > opr1;
-		} else if(i == LOW) {
+		} else if(i == LT) {
 			int opr1 = *(store + AX);
 			int opr2 = *(store + (--*(SP + store)));
 			*(store + AX) = opr2 < opr1;

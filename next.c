@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
 	if(!(fp = fopen(argv[1], "r"))) { printf("error!\n"); exit(-1); }
 	p = (char*)malloc(MAXSIZE * sizeof(char));
 	int i = fread(p, sizeof(char), MAXSIZE, fp);
-	p[i] = '\0';printf("%s",p);
+	p[i] = '\0';printf("%s\n",p);
 	fclose(fp);
 	next();
 	while(strcmp(tks, "") || tki != -1) {
