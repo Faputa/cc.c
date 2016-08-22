@@ -118,10 +118,11 @@ void setid(char *tks, int type) {
 	Id *last_id = id - 1;
 	if(last_id -> csmk == LOC
 	|| last_id -> csmk == FUN
-	|| last_id -> csmk == GLO)
+	|| last_id -> csmk == GLO) {
 		id -> class = last_id -> csmk;
-	else 
+	} else {
 		id -> class = last_id -> class;
+	}
 	
 	while(last_id -> csmk == LOC || last_id -> type == FUN) last_id--; //可以证明：type等于FUN时csmk一定等于ID
 	if(last_id -> csmk == FUN || last_id -> csmk == GLO || last_id -> offset < 0) { //offset小于0为参数，且此时csmk不可能为LOC
