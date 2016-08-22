@@ -238,7 +238,9 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 		else if(!strcmp(opr, "*")) *e++ = MUL;
 		else if(!strcmp(opr, "/")) *e++ = DIV;
 		else if(!strcmp(opr, "%")) *e++ = MOD;
-		else if(!strcmp(opr, "=")) *e++ = ASS;
+		else if(!strcmp(opr, "=")) {
+			if(is_var) *e++ = ASS; else { printf("error!\n"); exit(-1); }
+		}
 		else if(!strcmp(opr, "==")) *e++ = EQ;
 		else if(!strcmp(opr, ">")) *e++ = GT; //greater than
 		else if(!strcmp(opr, "<")) *e++ = LT; //less than
