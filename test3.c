@@ -5,9 +5,10 @@ int f(int a, int b, int c) {
 }
 int a, b, c;
 int main() {
-	int a = 100;
+	int a;
 	{
-		int b = 200;
-		print(a + b);
+		int b;
+		a = 100 * b = 100 * 100;
+		print(a); space(); print(b);
 	}
 }

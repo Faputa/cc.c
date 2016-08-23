@@ -163,12 +163,12 @@ void outblock() {
 int lev(char *opr) { //优先级越高lev越大，其他符号lev为0
 	char *oprs[] = {
 		")",
-		"", "=",
 		"", "&&", "||", "!",
 		"", "==", "!=",
 		"", ">", "<", ">=", "<=",
 		"", "+", "-",
-		"", "*", "/", "%"
+		"", "*", "/", "%",
+		"", "="
 	};
 	int lev = 1;
 	for(int i = 0; i < sizeof(oprs) / sizeof(*oprs); i++) {
@@ -224,39 +224,42 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	} else { printf("error!\n"); exit(-1); }
 	
 	next();
-	if(is_var && strcmp(tks, "=")) *e++ = VAL; //根据真实地址获取值
-	while(lev(tks) > lev(last_opr)) {
-		*e++ = PUSH;
-		*e++ = AX;
-		char *opr = tks;
+	if(!strcmp(tks, "=")) {
+		*e++ = PUSH; *e++ = AX;
 		next();
-		if(type != expr(opr)) { printf("error!\n"); exit(-1); }
-		if (!strcmp(opr, "+")) *e++ = ADD;
-		else if(!strcmp(opr, "-")) *e++ = SUB;
-		else if(!strcmp(opr, "*")) *e++ = MUL;
-		else if(!strcmp(opr, "/")) *e++ = DIV;
-		else if(!strcmp(opr, "%")) *e++ = MOD;
-		else if(!strcmp(opr, "=")) {
-			if(is_var) *e++ = ASS; else { printf("error!\n"); exit(-1); }
+		expr("");
+		if(is_var) *e++ = ASS; else { printf("error!\n"); exit(-1); }
+	} else {
+		if(is_var) *e++ = VAL; //根据真实地址获取值
+		while(lev(tks) > lev(last_opr)) {
+			char *opr = tks;
+			*e++ = PUSH; *e++ = AX;
+			next();
+			if(type != expr(opr)) { printf("error!\n"); exit(-1); }
+			if (!strcmp(opr, "+")) *e++ = ADD;
+			else if(!strcmp(opr, "-")) *e++ = SUB;
+			else if(!strcmp(opr, "*")) *e++ = MUL;
+			else if(!strcmp(opr, "/")) *e++ = DIV;
+			else if(!strcmp(opr, "%")) *e++ = MOD;
+			else if(!strcmp(opr, "==")) *e++ = EQ;
+			else if(!strcmp(opr, ">")) *e++ = GT; //greater than
+			else if(!strcmp(opr, "<")) *e++ = LT; //less than
+			else if(!strcmp(opr, "!=")) {
+				*e++ = EQ;
+				*e++ = NOT;
+			}
+			else if(!strcmp(opr, ">=")) {
+				*e++ = LT;
+				*e++ = NOT;
+			}
+			else if(!strcmp(opr, "<=")) {
+				*e++ = GT;
+				*e++ = NOT;
+			}
+			else if(!strcmp(opr, "&&")) *e++ = AND;
+			else if(!strcmp(opr, "||")) *e++ = OR;
+			else { printf("error!\n"); exit(-1); }
 		}
-		else if(!strcmp(opr, "==")) *e++ = EQ;
-		else if(!strcmp(opr, ">")) *e++ = GT; //greater than
-		else if(!strcmp(opr, "<")) *e++ = LT; //less than
-		else if(!strcmp(opr, "!=")) {
-			*e++ = EQ;
-			*e++ = NOT;
-		}
-		else if(!strcmp(opr, ">=")) {
-			*e++ = LT;
-			*e++ = NOT;
-		}
-		else if(!strcmp(opr, "<=")) {
-			*e++ = GT;
-			*e++ = NOT;
-		}
-		else if(!strcmp(opr, "&&")) *e++ = AND;
-		else if(!strcmp(opr, "||")) *e++ = OR;
-		else { printf("error!\n"); exit(-1); }
 	}
 	return type;
 }
@@ -581,7 +584,7 @@ int main(int argc, char *argv[]) {
 	//run..
 	int *store = (int*)malloc(MAXSIZE * sizeof(int));
 	*(SP + store) = *(BP + store) = AX + 1; //sp = AX + 1;
-	*(IP + store) = 0;//int *pp = NULL; //ip = 0;
+	*(IP + store) = 0;//int *ax = NULL; //ip = 0;
 	while(1) {
 		if(debug) {
 			printf("\n_%d_%d_%d_%d_\t", *(IP + store), *(BP + store), *(SP + store), *(store + AX));
@@ -668,13 +671,13 @@ int main(int argc, char *argv[]) {
 			*(store + AX) = (int)(data + opr);
 		} else if(i == AL) { //address local
 			int opr = *(emit + (*(IP + store))++);
-			*(store + AX) = (int)(store + *(BP + store) + opr);//pp=(int*)*(store + AX);
+			*(store + AX) = (int)(store + *(BP + store) + opr);//ax=(int*)*(store + AX);
 		} else if(i == VAL) {
 			int opr = *(store + AX);
 			*(store + AX) = *(int*)opr;
 		} else if(i == EXIT) {
 			break;
-		}//if(pp)printf(" >>%d",*p);
+		}//if(ax)printf(" >>%d",*ax);
 	}
 	printf("\n%d",*(store + AX));
 	return 0;
