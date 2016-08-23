@@ -64,8 +64,8 @@ void expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	
 	next();
 	while(lev(tks) > lev(last_opr)) {
-		sp++;
 		char *opr = tks;
+		sp++;
 		next();
 		expr(opr);
 		int opr2 = *sp;
