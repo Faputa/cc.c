@@ -168,7 +168,8 @@ int lev(char *opr) { //优先级越高lev越大，其他符号lev为0
 		"", ">", "<", ">=", "<=",
 		"", "+", "-",
 		"", "*", "/", "%",
-		"", "="
+		"", "=",
+		"", "ref", "&"
 	};
 	int lev = 1;
 	for(int i = 0; i < sizeof(oprs) / sizeof(*oprs); i++) {
@@ -183,7 +184,7 @@ int lev(char *opr) { //优先级越高lev越大，其他符号lev为0
 
 int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	int type;
-	int is_var = 0;
+	int is_lvalue = 0;
 	if(tki == INT) {
 		type = INT;
 		*e++ = SET; *e++ = AX; *e++ = atoi(tks);
@@ -207,14 +208,14 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 				if(!strcmp(tks, ",")) next();
 			}
 			*e++ = SET; *e++ = AX; int *_e = e++; //push next ip
-			//*e++ = ADF; //根据偏移量获取函数地址
+			//*e++ = AF; //根据偏移量获取函数地址
 			*e++ = PUSH; *e++ = AX;
 			*e++ = JMP; *e++ = callee; //jmp
 			*_e = e - emit; //set next ip
 			*e++ = DEC; *e++ = SP; *e++ = argc;
 		} else if(type == INT) {
 			*e++ = this_id -> class == GLO ? AG: AL; *e++ = this_id -> offset; //根据偏移量获取真实地址
-			is_var = 1;
+			is_lvalue = 1;
 		}
 	} else if(!strcmp(tks, "(")) {
 		next();
@@ -228,12 +229,26 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	
 	next();
 	if(!strcmp(tks, "=")) {
-		*e++ = PUSH; *e++ = AX;
-		next();
-		expr("");
-		if(is_var) *e++ = ASS; else { printf("error!\n"); exit(-1); }
+		if(lev(tks) > lev(last_opr)) {
+			*e++ = PUSH; *e++ = AX;
+			next();
+			expr("");
+			if(is_lvalue) *e++ = ASS; else { printf("error!\n"); exit(-1); }
+		} else {
+			if(is_lvalue) {
+				if(!strcmp(last_opr, "&")) ;
+				else *e++ = VAL;
+			} else {
+				if(!strcmp(last_opr, "&")) { printf("error!\n"); exit(-1); }
+			}
+		}
 	} else {
-		if(is_var) *e++ = VAL; //根据真实地址获取值
+		if(is_lvalue) {
+			if(!strcmp(last_opr, "&")) ;
+			else *e++ = VAL;
+		} else {
+			if(!strcmp(last_opr, "&")) { printf("error!\n"); exit(-1); }
+		}
 		while(lev(tks) > lev(last_opr)) {
 			char *opr = tks;
 			*e++ = PUSH; *e++ = AX;
