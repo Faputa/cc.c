@@ -101,7 +101,19 @@ Type* deriv_type(int base, Type *rely, int count) { //类型生成
 			ty -> base = base;
 			ty -> rely = rely;
 			return ty++;
-		} else if(base == ARR || base == FUN) {
+		} else if(base == ARR) {
+			if(rely -> base == FUN) { printf("error!\n"); exit(-1); }
+			for(Type *i = tyls; i < ty; i++) {
+				if(i -> base == base
+				&& i -> rely == rely
+				&& i -> count == count) return i;
+			}
+			ty -> base = base;
+			ty -> rely = rely;
+			ty -> count = count;
+			return ty++;
+		} else if(base == FUN) {
+			if(rely -> base == FUN || rely -> base == ARR) { printf("error!\n"); exit(-1); }
 			for(Type *i = tyls; i < ty; i++) {
 				if(i -> base == base
 				&& i -> rely == rely
