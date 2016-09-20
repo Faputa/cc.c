@@ -59,11 +59,11 @@ int expr(char *last_opr);
 /* function define */
 void next() {
 	char *keyword[] = {
-		"int", "if","else","while","do","for","return"
+		"int", "if", "else", "while", "do", "for", "return"
 	};
 	char *point[] = {
-		"==",">=","<=","&&","||","+=","-=","*=","/=",
-		"+","-","*","/","%","=",">","<","!","^","&","|","(",")","{","}","[","]","?",":",",",";"
+		"==", ">=", "<=", "&&", "||", "+=", "-=", "*=", "/=",
+		"+", "-", "*", "/", "%", "=", ">", "<", "!", "^", "&", "|", "(", ")", "{", "}", "[", "]", "?", ":", ",", ";"
 	};
 	tks = ""; tki = -1;
 	while(*p) {
@@ -118,9 +118,7 @@ void setid(char *tks, int type) {
 	id -> csmk = ID;
 	
 	Id *last_id = id - 1;
-	if(last_id -> csmk == LOC
-	|| last_id -> csmk == FUN
-	|| last_id -> csmk == GLO) {
+	if(last_id -> csmk != ID) {
 		id -> class = last_id -> csmk;
 	} else {
 		id -> class = last_id -> class;
@@ -169,9 +167,7 @@ int lev(char *opr) { //优先级越高lev越大，其他符号lev为0
 		"", "==", "!=",
 		"", ">", "<", ">=", "<=",
 		"", "+", "-",
-		"", "*", "/", "%",
-		"", "=",
-		"", "ref", "&"
+		"", "*", "/", "%"
 	};
 	int lev = 1;
 	for(int i = 0; i < sizeof(oprs) / sizeof(*oprs); i++) {
@@ -190,6 +186,7 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	if(tki == INT) {
 		type = INT;
 		*e++ = SET; *e++ = AX; *e++ = atoi(tks);
+		next();
 	} else if(tki == ID) {
 		Id *this_id = getid(tks);
 		type = this_id -> type;
@@ -232,38 +229,25 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 			*e++ = this_id -> class == GLO ? AG: AL; *e++ = this_id -> offset; //根据偏移量获取真实地址
 			is_lvalue = 1;
 		}
+		next();
 	} else if(!strcmp(tks, "(")) {
 		next();
 		expr(")");
 		if(strcmp(tks, ")")) { printf("error!\n"); exit(-1); }
+		next();
 	} else if(!strcmp(tks, "!")) {
 		next();
 		expr("!");
 		*e++ = NOT;
 	} else { printf("error!\n"); exit(-1); }
 	
-	next();
 	if(!strcmp(tks, "=")) {
-		if(lev(tks) > lev(last_opr)) {
-			*e++ = PUSH; *e++ = AX;
-			next();
-			expr("");
-			if(is_lvalue) *e++ = ASS; else { printf("error!\n"); exit(-1); }
-		} else {
-			if(is_lvalue) {
-				if(!strcmp(last_opr, "&")) ;
-				else *e++ = VAL;
-			} else {
-				if(!strcmp(last_opr, "&")) { printf("error!\n"); exit(-1); }
-			}
-		}
+		*e++ = PUSH; *e++ = AX;
+		next();
+		expr("");
+		if(is_lvalue) *e++ = ASS; else { printf("error!\n"); exit(-1); }
 	} else {
-		if(is_lvalue) {
-			if(!strcmp(last_opr, "&")) ;
-			else *e++ = VAL;
-		} else {
-			if(!strcmp(last_opr, "&")) { printf("error!\n"); exit(-1); }
-		}
+		if(is_lvalue) *e++ = VAL;
 		while(lev(tks) > lev(last_opr)) {
 			char *opr = tks;
 			*e++ = PUSH; *e++ = AX;
@@ -347,7 +331,7 @@ void stmt() {
 		if(!strcmp(tks, "(")) next(); else { printf("error!\n"); exit(-1); }
 		if(strcmp(tks, ";")) {
 			if(tki == Int) declare(LOC);
-			else stmt();
+			else expr("");
 			if(strcmp(tks, ";")) { printf("error!\n"); exit(-1); }
 		}
 		next();
@@ -481,7 +465,7 @@ void declare(int env) {
 					//if(tki != INT) { printf("error!\n"); exit(-1); }
 					*e++ = AL; *e++ = id -> offset;
 					*e++ = PUSH; *e++ = AX;
-					if(type != expr("")) { printf("error10!\n"); exit(-1); }//*e++ = SET; *e++ = AX; *e++ = atoi(tks);
+					if(type != expr("")) { printf("error!\n"); exit(-1); }//*e++ = SET; *e++ = AX; *e++ = atoi(tks);
 					*e++ = ASS;
 				} else { printf("error!\n"); exit(-1); }
 				//next();

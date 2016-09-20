@@ -1,7 +1,5 @@
-#ifndef TEST_H
-#define TEST_H
-
-#include <stdio.h>
+#ifndef _TEST_H_
+#define _TEST_H_
 
 void endl();
 void space();

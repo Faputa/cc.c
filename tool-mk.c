@@ -1,39 +1,47 @@
 //将文件中的所有"error"替换成"error"+数字
+//支持读取多个文件
 
 #include <stdio.h>
 #include <unistd.h>
 #include <malloc.h>
 #include <string.h>
 #define MAXSIZE 10000
+#define BUFSIZE 100
 
 int main(int argc, char *argv[]) {
-	char *src, *emit, *fname = NULL;
+	char *src[BUFSIZE], *emit[BUFSIZE], *fname[BUFSIZE];
+	FILE *fp[BUFSIZE];
 	int reset = 0;
-	FILE *fp;
+	for(int i = 0; i < sizeof(fname) / sizeof(*fname); i++) fname[i] = NULL;
 	if(argc < 2) { printf("error!\n"); exit(-1); }
 	for(int i = 1; i < argc; i++) {
 		if(!strcmp(argv[i], "-r")) {
 			reset = 1;
 		} else {
-			fname = argv[i];
+			int j = 0;
+			while(fname[j]) {
+				if(!strcmp(argv[i], fname[j])) break;
+				j++;
+			}
+			fname[j] = argv[i];
 		}
 	}
-	if(!fname) { printf("error!\n"); exit(-1); }
-	if(!(fp = fopen(fname, "r"))) { printf("error!\n"); exit(-1); }
 	
-	{ //read
-		fseek(fp, 0, SEEK_END);
-		int fsize = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		char *p = src = (char*)malloc(fsize * sizeof(char));
-		char *e = emit = (char*)malloc((fsize + MAXSIZE) * sizeof(char));
-		emit[0] = '\0';
+	for(int i = 0; fname[i]; i++) { //read
+		if(!(fp[i] = fopen(fname[i], "r"))) { printf("error!\n"); exit(-1); }
+		fseek(fp[i], 0, SEEK_END);
+		int fsize = ftell(fp[i]);
+		fseek(fp[i], 0, SEEK_SET);
 		
-		{ int i = fread(p, sizeof(char), fsize, fp); p[i] = '\0'; }
-		fclose(fp);
+		char *p = src[i] = (char*)malloc(fsize * sizeof(char));
+		char *e = emit[i] = (char*)malloc((fsize + MAXSIZE) * sizeof(char)); emit[i][0] = '\0';
 		
-		char buf[100], *str = "error";
-		int count = 0, len = strlen(str);
+		{ int j = fread(p, sizeof(char), fsize, fp[i]); p[j] = '\0'; }
+		fclose(fp[i]);
+		
+		char buf[BUFSIZE], *str = "error";
+		static int count = 0;
+		int len = strlen(str);
 		while(*p) {
 			if(!strncmp(p, str, len)) {
 				p += len;
@@ -43,7 +51,7 @@ int main(int argc, char *argv[]) {
 				} else {
 					sprintf(buf, "%s%d", str, ++count);
 				}
-				strcat(emit, buf);
+				strcat(emit[i], buf);
 				e += strlen(buf);
 				//sprintf(emit, "%s%s%d", emit, str, ++count); //效率低，废弃
 				//e = emit + strlen(emit);
@@ -53,20 +61,20 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-	
-	{ //write
+		
+	for(int i = 0; fname[i]; i++) { //write
 		//打印
 		//printf("%s", emit);
 		
 		if(!reset) {//备份原文件
 			int len;
-			char buf[100], *fe;
-			if(fe = strrchr(fname, '.')) {
-				len = fe - fname;
-				strncpy(buf, fname, len);
+			char buf[BUFSIZE], *fe;
+			if(fe = strrchr(fname[i], '.')) {
+				len = fe - fname[i];
+				strncpy(buf, fname[i], len);
 			} else {
-				len = strlen(fname);
-				strncpy(buf, fname, len);
+				len = strlen(fname[i]);
+				strncpy(buf, fname[i], len);
 				fe = "";
 			}
 			int count = 0;
@@ -74,14 +82,14 @@ int main(int argc, char *argv[]) {
 				buf[len] = '\0';
 				sprintf(buf, "%s%s%d%s%s", buf, "(", ++count, ")", fe);
 			} while(!access(buf, F_OK));
-			if(!(fp = fopen(buf, "w"))) { printf("error!\n"); exit(-1); }
-			fwrite(src, sizeof(char), strlen(src), fp);
-			fclose(fp);
+			if(!(fp[i] = fopen(buf, "w"))) { printf("error!\n"); exit(-1); }
+			fwrite(src[i], sizeof(char), strlen(src[i]), fp[i]);
+			fclose(fp[i]);
 		}
 		
 		//更新原文件
-		if(!(fp = fopen(fname, "w"))) { printf("error!\n"); exit(-1); }
-		fwrite(emit, sizeof(char), strlen(emit), fp);
-		fclose(fp);
+		if(!(fp[i] = fopen(fname[i], "w"))) { printf("error!\n"); exit(-1); }
+		fwrite(emit[i], sizeof(char), strlen(emit[i]), fp[i]);
+		fclose(fp[i]);
 	}
 }

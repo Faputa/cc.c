@@ -3,8 +3,10 @@
 int f(int a, int b, int c) {
 	int d, e, f;
 }
-int a, b, c;
+int a = 100, b = 200, c = 300;
 int main() {
+	print(a); space(); print(b);
+	endl();
 	int a;
 	{
 		int b;

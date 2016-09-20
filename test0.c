@@ -28,7 +28,7 @@ int fibonacci(int n) {
 	}
 }
 int fibonacci_(int n) {
-	if(!n > 0) {
+	if(n <= 0) {
 		return 1;
 	} else if(n == 1) {
 		return 1;
@@ -63,10 +63,10 @@ int ackermann(int m, int n) { //阿克曼函数 http://t.cn/RtYNS9B
 	}
 }
 int main() {
-	print(factoral(5)); endl();
-	print(factoral_(5)); endl();
-	print(fibonacci(5)); endl();
-	print(fibonacci_(5)); endl();
-	print(ackerman(4,2)); endl();
-	print(ackermann(3,7)); endl();
+	//return factoral(5);
+	//return factoral_(5);
+	//return fibonacci(5);
+	//return fibonacci_(5);
+	//return ackerman(4,2);
+	return ackermann(3,7);
 }

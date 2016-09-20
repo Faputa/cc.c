@@ -7,7 +7,7 @@
 #include <malloc.h>
 #include <string.h>
 #define MAXSIZE 1000
-#define NORSIZE 100
+#define BUFSIZE 100
 
 typedef struct Type {
 	int base;
@@ -137,9 +137,13 @@ void print_type(Type *type) {
 }
 
 Type* specifier() {
-	if(tki == Int) return deriv_type(INT, NULL, 0);
-	else if(tki == Char) return deriv_type(CHAR, NULL, 0);
-	else return NULL;
+	if(tki == Int) {
+		next();
+		return deriv_type(INT, NULL, 0);
+	} else if(tki == Char) {
+		next();
+		return deriv_type(CHAR, NULL, 0);
+	} else { printf("error!\n"); exit(-1); }
 }
 
 int lev(char *opr) {
@@ -159,13 +163,13 @@ int lev(char *opr) {
 	return 0; //其他符号
 }
 
-Type* declare(Type *type); //前置声明
+Type* declarator(Type *type); //前置声明
 int* complex(char *last_opr, int *cpx) { //复杂类型分析
 	//前置符号
 	if(!strcmp(tks, "*")) { //指针
 		next();
 		cpx = complex("*", cpx);
-		*cpx++;
+		cpx++;
 		*cpx++ = PTR;
 	} else if(!strcmp(tks, "(")) { //括号
 		next();
@@ -174,16 +178,16 @@ int* complex(char *last_opr, int *cpx) { //复杂类型分析
 		next();
 	} else if(tki == ID) {
 		if(!name) name = tks;
-		//setid(NULL);
+		//(id - 1) -> name = tks;
 		next();
-	} else { printf("error!\n"); exit(-1); }//printf("%s,%s\n",last_opr,tks);
+	} else { printf("error!\n"); exit(-1); }
 	
 	//next();
 	//后置符号
 	while(lev(tks) > lev(last_opr)) {
 		if(!strcmp(tks, "[")) { //数组
 			next();
-			int count = NULL;
+			int count = 0;
 			if(strcmp(tks, "]")) {
 				if(tki == INT) count = atoi(tks);
 				else { printf("error!\n"); exit(-1); }
@@ -199,10 +203,7 @@ int* complex(char *last_opr, int *cpx) { //复杂类型分析
 				while(1) {
 					count++;
 					Type *type = specifier();
-					if(!type) { printf("error!\n"); exit(-1); }
-					next();
-					type = declare(type);
-					if(!type) { printf("error!\n"); exit(-1); }
+					declarator(type);
 					if(!strcmp(tks, ")")) break;
 					else if(!strcmp(tks, ",")) next();
 					else { printf("error!\n"); exit(-1); }
@@ -216,10 +217,10 @@ int* complex(char *last_opr, int *cpx) { //复杂类型分析
 	return cpx; //update cpx
 }
 
-Type* declare(Type *type) {
+Type* declarator(Type *type) {
+	//if(strcmp(tks, "*") && strcmp(tks, "(") && tki != ID) { printf("error!\n"); exit(-1); }
 	//Id *this_id = id++;
-	if(strcmp(tks, "*") && strcmp(tks, "(") && tki != ID) return NULL;
-	int cpxsk[NORSIZE]; //复杂类型栈
+	int cpxsk[BUFSIZE]; //复杂类型栈
 	int *cpx = cpxsk; //复杂类型栈栈顶指针
 	cpx = complex("", cpx);
 	while(cpx > cpxsk) {
@@ -227,7 +228,7 @@ Type* declare(Type *type) {
 		int count = *--cpx;
 		type = deriv_type(base, type, count);
 	}
-	//this_id -> type = type;
+	//setid(this_id, type);
 	return type;
 }
 
@@ -237,10 +238,7 @@ int main(int argc, char *argv[]) {
 	p = argv[1];
 	next();
 	Type *type = specifier();
-	if(!type) { printf("error!\n"); exit(-1); }
-	next();
-	type = declare(type);
-	if(!type) { printf("error!\n"); exit(-1); }
+	type = declarator(type);
 	if(strcmp(tks, ";") && strcmp(tks, "")) { printf("error!\n"); exit(-1); }
 	printf("%s为", name);
 	print_type(type);

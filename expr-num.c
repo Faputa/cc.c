@@ -11,7 +11,7 @@
 enum { NUM };
 
 int tki;
-float *stack, *sp;
+float *sp;
 char *tks, *p;
 
 void next() {
@@ -105,7 +105,7 @@ void print_float(float f) {
 
 int main(int argc, char *argv[]) {
 	if(argc != 2) { printf("error!\n"); exit(-1); }
-	stack = sp = (float*)malloc(MAXSIZE * sizeof(float));
+	sp = (float*)malloc(MAXSIZE * sizeof(float));
 	p = argv[1];
 	next();
 	expr("");

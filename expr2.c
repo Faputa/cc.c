@@ -1,4 +1,6 @@
 //表达式计算器
+//递归下降分析
+//遇到终结符必须主动移动tk
 
 #include <stdio.h>
 #include <malloc.h>
@@ -36,46 +38,59 @@ void next() {
 	}
 }
 
-int lev(char *opr) {
-	char *oprs[] = {
-		")",
-		"", "+", "-",
-		"", "*", "/"
-	};
-	int lev = 1;
-	for(int i = 0; i < sizeof(oprs) / sizeof(*oprs); i++) {
-		if(!strcmp(oprs[i], opr)) {
-			return lev;
-		} else if(!strcmp(oprs[i], "")) {
-			lev++;
-		}
-	}
-	return 0; //其他符号
-}
-
-void expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
+void expr();
+void atom() { //atom -> int | "(" expr ")"
 	if(tki == INT) {
 		*sp = atoi(tks);
+		next();
 	} else if(!strcmp(tks, "(")) {
 		next();
-		expr(")");
+		expr();
 		if(strcmp(tks, ")")) { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+		next();
 	} else { printf("error!\n"); exit(-1); }
-	
-	next();
-	while(lev(tks) > lev(last_opr)) {
-		char *opr = tks;
+}
+
+void muldiv() { //muldiv -> atom ["*" muldiv | "/" muldiv]
+	atom();
+	if(!strcmp(tks, "*")) {
 		sp++;
 		next();
-		expr(opr);
+		muldiv();
 		int opr2 = *sp;
 		int opr1 = *--sp;
-		if (!strcmp(opr, "+")) *sp = opr1 + opr2;
-		else if(!strcmp(opr, "-")) *sp = opr1 - opr2;
-		else if(!strcmp(opr, "*")) *sp = opr1 * opr2;
-		else if(!strcmp(opr, "/")) *sp = opr1 / opr2;
-		else { printf("error!\n"); exit(-1); }
+		*sp = opr1 * opr2;
+	} else if(!strcmp(tks, "/")) {
+		sp++;
+		next();
+		muldiv();
+		int opr2 = *sp;
+		int opr1 = *--sp;
+		*sp = opr1 / opr2;
 	}
+}
+
+void addsub() { //addsub -> muldiv ["+" addsub | "-" addsub]
+	muldiv();
+	if(!strcmp(tks, "+")) {
+		sp++;
+		next();
+		addsub();
+		int opr2 = *sp;
+		int opr1 = *--sp;
+		*sp = opr1 + opr2;
+	} else if(!strcmp(tks, "-")) {
+		sp++;
+		next();
+		addsub();
+		int opr2 = *sp;
+		int opr1 = *--sp;
+		*sp = opr1 - opr2;
+	}
+}
+
+void expr() { //expr -> addsub
+	addsub();
 }
 
 int main(int argc, char *argv[]) {
@@ -83,7 +98,7 @@ int main(int argc, char *argv[]) {
 	sp = (int*)malloc(MAXSIZE * sizeof(int));
 	p = argv[1];
 	next();
-	expr("");
+	expr();
 	if(strcmp(tks, ";") && strcmp(tks, "")) { printf("error!\n"); exit(-1); }
 	printf("%d\n", *sp);
 	return 0;

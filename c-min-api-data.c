@@ -6,8 +6,9 @@
  * 4.符号栈存放全局符号标记：csmk==GLO；函数符号标记：csmk==FUN；局部符号标记：csmk==LOC
  * 5.必须为全局变量设置data段的理由：无法确定全局变量关于bp的偏移量
  * 6.数据段、堆栈段、代码段、寄存器基本长度为sizeof(int)
- * 7.函数调用方案二
+ * 7.函数调用方案一
  * 8.添加了交互api
+ * 9.采用统一的data段
  */
 #include <stdio.h>
 #include <malloc.h>
@@ -26,7 +27,7 @@ typedef struct {
 /* global */
 Id *id, *idls;
 char *p, *tks;
-int *e, *emit, *d, tki;
+int *e, *emit, *data, tki;
 
 /* integer */
 enum {
@@ -125,11 +126,18 @@ void setid(char *tks, int type) {
 	}
 	
 	while(last_id -> csmk == LOC || last_id -> type == FUN || last_id -> type == API) last_id--; //可以证明：type等于FUN或API时csmk一定等于ID
-	if(last_id -> csmk == GLO || last_id -> csmk == FUN) {
-		id -> offset = 0;
+	if(id -> class == GLO) {
+		if(last_id -> csmk == GLO) {
+			if(type == INT) id -> offset = MAXSIZE - 1;
+		} else {
+			if(type == INT) id -> offset = last_id -> offset - 1;
+		}
 	} else {
-		id -> offset = last_id -> offset;
-		if(last_id -> type == INT) id -> offset += 1;
+		if(last_id -> csmk == FUN) {
+			id -> offset = 0;
+		} else {
+			if(last_id -> type == INT) id -> offset = last_id -> offset + 1;
+		}
 	}
 	/*for(Id*i=idls;i<=id;i++){ //打印符号表
 		if(i->csmk==GLO)printf("_GLO");
@@ -153,7 +161,7 @@ void inblock() {
 
 void outblock() {
 	while(id -> csmk != LOC) {
-		//*e++ = POP; *e++ = AX;
+		*e++ = POP; *e++ = AX;
 		//*e++ = DEC; *e++ = SP; *e++ = 1;
 		id--;
 	}
@@ -223,7 +231,7 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 			}
 			*e++ = callee;
 		} else if(type == INT) {
-			*e++ = this_id -> class == GLO ? AG: AL; *e++ = this_id -> offset; //根据偏移量获取真实地址
+			*e++ = this_id -> class == GLO ? AG: AL; *e++ = this_id -> offset;
 			is_lvalue = 1;
 		}
 		next();
@@ -377,7 +385,6 @@ void stmt() {
 }
 
 void declare(int env) {
-	static int varc;
 	if(env == GLO) {//printf("-%s-\n",tks);
 		int type;
 		if(tki == Int) type = INT;
@@ -387,13 +394,11 @@ void declare(int env) {
 		setid(tks, type);
 		next();
 		if(!strcmp(tks, "(")) {
-			varc = 0;
 			id -> type = FUN;
 			id -> offset = e - emit;
 			(++id) -> csmk = FUN; //infunc
 			*e++ = MOV; *e++ = BP; *e++ = SP; //bp = sp
-			*e++ = DEC; *e++ = BP; int *_e1 = e++;
-			*e++ = INC; *e++ = SP; int *_e2 = e++;
+			*e++ = DEC; *e++ = BP; int *_e = e++;
 			//declare(ARG);
 			next();
 			int argc = 0;
@@ -412,7 +417,7 @@ void declare(int env) {
 					else { printf("error!\n"); exit(-1); }
 				}
 			}
-			*_e1 = argc;
+			*_e = argc;
 			next();
 			if(strcmp(tks, "{")) { printf("error!\n"); exit(-1); }
 			next();
@@ -421,7 +426,6 @@ void declare(int env) {
 				else stmt();
 				next();
 			}
-			*_e2 = varc;
 			*e++ = MOV; *e++ = SP; *e++ = BP; //sp = bp
 			*e++ = POP; *e++ = BP;
 			*e++ = POP; *e++ = IP;
@@ -432,11 +436,11 @@ void declare(int env) {
 					next();
 					if(type == INT) {
 						if(tki != INT) { printf("error!\n"); exit(-1); }
-						*(int*)(d + id -> offset) = atoi(tks);
+						*(data + id -> offset) = atoi(tks);
 					} else { printf("error!\n"); exit(-1); }
 					next();
 				} else {
-					if(type == INT) *(int*)(d + id -> offset) = 0;
+					if(type == INT) *(data + id -> offset) = 0;
 				}
 				if(!strcmp(tks, ";")) break;
 				else if(!strcmp(tks, ",")) {
@@ -452,7 +456,6 @@ void declare(int env) {
 		else { printf("error!\n"); exit(-1); }
 		next();
 		while(1) {
-			varc++;
 			if(tki != ID) { printf("error!\n"); exit(-1); }
 			setid(tks, type);
 			next();
@@ -460,12 +463,12 @@ void declare(int env) {
 				next();
 				if(type == INT) {
 					//if(tki != INT) { printf("error!\n"); exit(-1); }
-					*e++ = AL; *e++ = id -> offset;
-					*e++ = PUSH; *e++ = AX;
 					if(type != expr("")) { printf("error!\n"); exit(-1); }//*e++ = SET; *e++ = AX; *e++ = atoi(tks);
-					*e++ = ASS;
+					*e++ = PUSH; *e++ = AX;
 				} else { printf("error!\n"); exit(-1); }
 				//next();
+			} else {
+				*e++ = PUSH; *e++ = AX;
 			}
 			if(!strcmp(tks, ";")) break;
 			else if(!strcmp(tks, ",")) next();
@@ -570,7 +573,7 @@ int main(int argc, char *argv[]) {
 	p = (char*)malloc(MAXSIZE * sizeof(char));
 	idls = id = (Id*)malloc(MAXSIZE * sizeof(Id));
 	emit = e = (int*)malloc(MAXSIZE * sizeof(int));
-	int *data = d = (int*)malloc(MAXSIZE * sizeof(int));
+	data = (int*)malloc(MAXSIZE * sizeof(int));
 
 	{ int i = fread(p, sizeof(char), MAXSIZE, fp); p[i] = '\0'; }//printf("%s",p);
 	fclose(fp);
@@ -607,101 +610,100 @@ int main(int argc, char *argv[]) {
 	}
 	
 	//run..
-	int *store = (int*)malloc(MAXSIZE * sizeof(int));
-	*(SP + store) = *(BP + store) = AX + 1; //sp = AX + 1;
-	*(IP + store) = 0;//int *ax = NULL; //ip = 0;
+	*(SP + data) = *(BP + data) = AX + 1; //sp = AX + 1;
+	*(IP + data) = 0;//int *ax = NULL; //ip = 0;
 	while(1) {
 		if(debug) {
-			printf("\n_%d_%d_%d_%d_\t", *(IP + store), *(BP + store), *(SP + store), *(store + AX));
-			print_emit(emit + *(IP + store));
+			printf("\n_%d_%d_%d_%d_\t", *(IP + data), *(BP + data), *(SP + data), *(data + AX));
+			print_emit(emit + *(IP + data));
 		}
-		int i = *(emit + (*(IP + store))++);
+		int i = *(emit + (*(IP + data))++);
 		if(i == PUSH) {
-			int opr = *(emit + (*(IP + store))++);
-			*(store + (*(SP + store))++) = *(store + opr);//printf(" %d",*(store+*(SP+store)-1));
+			int opr = *(emit + (*(IP + data))++);
+			*(data + (*(SP + data))++) = *(data + opr);//printf(" %d",*(data+*(SP+data)-1));
 		} else if(i == POP) {
-			int opr = *(emit + (*(IP + store))++);
-			*(store + opr) = *(store + (--*(SP + store)));//printf(" %d",*(store+*(SP+store)));
+			int opr = *(emit + (*(IP + data))++);
+			*(data + opr) = *(data + (--*(SP + data)));//printf(" %d",*(data+*(SP+data)));
 		} else if(i == SET) {
-			int opr1 = *(emit + (*(IP + store))++);
-			int opr2 = *(emit + (*(IP + store))++);
-			*(store + opr1) = opr2;
+			int opr1 = *(emit + (*(IP + data))++);
+			int opr2 = *(emit + (*(IP + data))++);
+			*(data + opr1) = opr2;
 		} else if(i == INC) {
-			int opr1 = *(emit + (*(IP + store))++);
-			int opr2 = *(emit + (*(IP + store))++);
-			*(store + opr1) += opr2;
+			int opr1 = *(emit + (*(IP + data))++);
+			int opr2 = *(emit + (*(IP + data))++);
+			*(data + opr1) += opr2;
 		} else if(i == DEC) {
-			int opr1 = *(emit + (*(IP + store))++);
-			int opr2 = *(emit + (*(IP + store))++);
-			*(store + opr1) -= opr2;
+			int opr1 = *(emit + (*(IP + data))++);
+			int opr2 = *(emit + (*(IP + data))++);
+			*(data + opr1) -= opr2;
 		} else if(i == JMP) {
-			int opr = *(emit + (*(IP + store))++);
-			*(IP + store) = opr;
+			int opr = *(emit + (*(IP + data))++);
+			*(IP + data) = opr;
 		} else if(i == JZ) { //jump if zero
-			int opr = *(emit + (*(IP + store))++);
-			if(!*(store + AX)) *(IP + store) = opr;
+			int opr = *(emit + (*(IP + data))++);
+			if(!*(data + AX)) *(IP + data) = opr;
 		} else if(i == MOV) {
-			int opr1 = *(emit + (*(IP + store))++);
-			int opr2 = *(emit + (*(IP + store))++);
-			*(store + opr1) = *(store + opr2);
+			int opr1 = *(emit + (*(IP + data))++);
+			int opr2 = *(emit + (*(IP + data))++);
+			*(data + opr1) = *(data + opr2);
 		} else if(i == ADD) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr1 + opr2;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr1 + opr2;
 		} else if(i == SUB) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 - opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 - opr1;
 		} else if(i == MUL) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr1 * opr2;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr1 * opr2;
 		} else if(i == DIV) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 / opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 / opr1;
 		} else if(i == MOD) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 % opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 % opr1;
 		} else if(i == ASS) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(int*)opr2 = opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + opr2) = opr1;
 		} else if(i == EQ) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 == opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 == opr1;
 		} else if(i == GT) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 > opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 > opr1;
 		} else if(i == LT) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 < opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 < opr1;
 		} else if(i == AND) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 && opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 && opr1;
 		} else if(i == OR) {
-			int opr1 = *(store + AX);
-			int opr2 = *(store + (--*(SP + store)));
-			*(store + AX) = opr2 || opr1;
+			int opr1 = *(data + AX);
+			int opr2 = *(data + (--*(SP + data)));
+			*(data + AX) = opr2 || opr1;
 		} else if(i == NOT) {
-			int opr = *(store + AX);
-			*(store + AX) = !opr;
+			int opr = *(data + AX);
+			*(data + AX) = !opr;
 		} else if(i == AG) { //address global
-			int opr = *(emit + (*(IP + store))++);
-			*(store + AX) = (int)(data + opr);
+			int opr = *(emit + (*(IP + data))++);
+			*(data + AX) = opr;
 		} else if(i == AL) { //address local
-			int opr = *(emit + (*(IP + store))++);
-			*(store + AX) = (int)(store + *(BP + store) + opr);//ax=(int*)*(store + AX);
+			int opr = *(emit + (*(IP + data))++);
+			*(data + AX) = *(BP + data) + opr;//ax = bp + ax
 		} else if(i == VAL) {
-			int opr = *(store + AX);
-			*(store + AX) = *(int*)opr;
+			int opr = *(data + AX);
+			*(data + AX) = *(data + opr);
 		} else if(i == PRINT) {
-			int opr = *(store + (--*(SP + store)));
+			int opr = *(data + (--*(SP + data)));
 			printf("%d", opr);
 		} else if(i == ENDL) {
 			printf("\n");
@@ -710,11 +712,11 @@ int main(int argc, char *argv[]) {
 		} else if(i == SCAN) {
 			int opr;
 			scanf("%d", &opr);
-			*(store + AX) = opr;
+			*(data + AX) = opr;
 		} else if(i == EXIT) {
 			break;
 		}//if(ax)printf(" >>%d",*ax);
 	}
-	//printf("\n%d\n",*(store + AX));
+	//printf("\n%d\n",*(data + AX));
 	return 0;
 }

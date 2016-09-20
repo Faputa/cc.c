@@ -12,7 +12,7 @@
 enum { NUM };
 
 int tki;
-float *stack, *sp;
+float *sp;
 char *tks, *p;
 
 void next() {//printf("aaa-%c-aaa\n",*p);
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 	{ int i = fread(p, sizeof(char), 10000, fp); p[i] = '\0'; }
 	fclose(fp);
 	
-	stack = sp = (float*)malloc(MAXSIZE * sizeof(float));
+	sp = (float*)malloc(MAXSIZE * sizeof(float));
 	next();
 	expr("");
 	if(strcmp(tks, ";") && strcmp(tks, "")) { printf("error!\n"); exit(-1); }
