@@ -91,9 +91,9 @@ void expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 }
 
 void print_float(float f) {
-	char bf[40], *i, *j;
-	sprintf(bf, "%f", f);
-	i = bf;
+	char buf[40], *i, *j;
+	sprintf(buf, "%f", f);
+	i = buf;
 	while(*i != '.') i++;
 	j = i + 1;
 	while(*j) {
@@ -101,7 +101,7 @@ void print_float(float f) {
 		j++;
 	}
 	*i = '\0';
-	printf("%s", bf);
+	printf("%s", buf);
 }
 
 int main(int argc, char *argv[]) {
