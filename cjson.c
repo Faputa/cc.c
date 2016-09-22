@@ -176,7 +176,7 @@ void setjson(Jsnode *node) {
 }
 
 Jsnode *get_jsnode_in_obj(Jsnode *node, char *name) {
-	if(node -> type == OBJ) { printf("error8!\n"); exit(-1); }
+	if(node -> type != OBJ) { printf("error8!\n"); exit(-1); }
 	for(Jsnode *i = node -> child; i != NULL; i = i -> next) {
 		if(!strcmp(name, i -> name)) return i;
 	}
@@ -184,7 +184,7 @@ Jsnode *get_jsnode_in_obj(Jsnode *node, char *name) {
 }
 
 Jsnode *get_jsnode_in_arr(Jsnode *node, int count) {
-	if(node -> type == ARR) { printf("error9!\n"); exit(-1); }
+	if(node -> type != ARR) { printf("error9!\n"); exit(-1); }
 	int i = 1;
 	Jsnode *j = node -> child;
 	while(j != NULL) {
@@ -193,6 +193,51 @@ Jsnode *get_jsnode_in_arr(Jsnode *node, int count) {
 		i++;
 	}
 	return NULL;
+}
+
+void del_jsnode_next(Jsnode *node);
+void del_jsnode_chird(Jsnode *node) {
+	if(node) {
+		switch(node -> type) {
+		case NUL:
+		case FALSE:
+		case TRUE:
+		case STR: break;
+		case ARR:
+		case OBJ:
+			for(Jsnode *i = node -> child; i != NULL; i = node -> child) {
+				node -> child = i -> next;
+				del_jsnode_next(i);
+			}
+			break;
+		default: printf("error12!\n"); exit(-1);
+		}
+	}
+}
+
+void del_jsnode_next(Jsnode *node) {
+	if(node && node -> next) {
+		switch(node -> next -> type) {
+		case NUL:
+		case FALSE:
+		case TRUE:
+		case STR: {
+				Jsnode *i = node -> next;
+				node -> next = i -> next;
+				free(i);
+				break;
+			}
+		case ARR:
+		case OBJ: {
+				Jsnode *i = node -> next;
+				node -> next = i -> next;
+				del_jsnode_chird(i);
+				free(i);
+				break;
+			}
+		default: printf("error12!\n"); exit(-1);
+		}
+	}
 }
 
 float get_num_in_numnode(Jsnode *node) {
@@ -259,5 +304,7 @@ int main(int argc, char *argv[]) {
 	Jsnode *node = newjsnode();
 	next();
 	setjson(node);//printf("%d",node->type);
+	del_jsnode_chird(get_jsnode_in_obj(node, "publisher"));
+	del_jsnode_next(get_jsnode_in_obj(node, "title"));
 	print_jsnode(node, 0);	
 }
