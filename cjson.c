@@ -239,12 +239,10 @@ void print_jsnode(Jsnode *node ,int indent) {
 	case STR: printf("\"%s\"", get_num_in_strnode(node)); break;
 	case OBJ: printf("{\n");
 		for(Jsnode *i = node -> child; i != NULL; i = i -> next) print_jsnode(i, indent + 1);
-		print_indent(indent); printf("}");
-		break;
+		print_indent(indent); printf("}"); break;
 	case ARR: printf("[\n");
 		for(Jsnode *i = node -> child; i != NULL; i = i -> next) print_jsnode(i, indent + 1);
-		print_indent(indent); printf("]");
-		break;
+		print_indent(indent); printf("]"); break;
 	default: printf("error12!\n"); exit(-1);
 	}
 	print_endl(node);
