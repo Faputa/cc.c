@@ -13,13 +13,11 @@ typedef enum {
 typedef struct Jsnode {
 	char *name;
 	Type type;
+	struct Jsnode *next;
 	union {
 		float num;
 		char *str;
-		struct {
-			struct Jsnode *child;
-			struct Jsnode *next;
-		};
+		struct Jsnode *child;
 	};
 } Jsnode;
 
@@ -109,41 +107,37 @@ void next() {
 Jsnode* newjsnode() {
 	Jsnode *node = (Jsnode*)malloc(sizeof(Jsnode));
 	node -> name = "";
-	node -> child = NULL;
 	node -> next = NULL;
+	node -> child = NULL;
 	return node;
 }
 
+void ins_obj_chird(Jsnode *node1, Jsnode *node2);
 void setjson(Jsnode *node) {
 	if(!strcmp(tks, "{")) {
 		next();
 		node -> type = OBJ;
 		if(strcmp(tks, "}")) {
-			node -> child = newjsnode();
-			node = node -> child;
 			while(1) {
+				Jsnode *child = newjsnode();
 				if(tki == STR) {
-					node -> name = tks;
+					child -> name = tks;
 					next();
 				} else { printf("error3!\n"); exit(-1); }
 				if(!strcmp(tks, ":")) next(); else { printf("error4!\n"); exit(-1); }
 				switch(tki) {
 					case NUL:
 					case FALSE:
-					case TRUE: node -> type = tki; break;
-					case NUM: node -> type = tki; node -> num = atof(tks); break;
-					case STR: node -> type = tki; node -> str = tks; break;
-					default: setjson(node);
+					case TRUE: child -> type = tki; break;
+					case NUM: child -> type = tki; child -> num = atof(tks); break;
+					case STR: child -> type = tki; child -> str = tks; break;
+					default: setjson(child);
 				}
+				ins_obj_chird(node, child);
 				next();
-				if(!strcmp(tks, "}")) {
-					//node -> next = NULL;
-					break;
-				} else if(!strcmp(tks, ",")) {
-					node -> next = newjsnode();
-					node = node -> next;
-					next();
-				} else { printf("error5!\n"); exit(-1); }
+				if(!strcmp(tks, "}")) break;
+				else if(!strcmp(tks, ",")) next();
+				else { printf("error5!\n"); exit(-1); }
 			}
 		}// else node -> child = NULL;
 	} else if(!strcmp(tks, "[")) {
@@ -175,7 +169,7 @@ void setjson(Jsnode *node) {
 	} else { printf("error7!\n"); exit(-1); }
 }
 
-Jsnode *get_jsnode_in_obj(Jsnode *node, char *name) {
+Jsnode *get_in_obj(Jsnode *node, char *name) {
 	if(node -> type != OBJ) { printf("error8!\n"); exit(-1); }
 	for(Jsnode *i = node -> child; i != NULL; i = i -> next) {
 		if(!strcmp(name, i -> name)) return i;
@@ -183,7 +177,7 @@ Jsnode *get_jsnode_in_obj(Jsnode *node, char *name) {
 	return NULL;
 }
 
-Jsnode *get_jsnode_in_arr(Jsnode *node, int count) {
+Jsnode *get_in_arr(Jsnode *node, int count) {
 	if(node -> type != ARR) { printf("error9!\n"); exit(-1); }
 	int i = 1;
 	Jsnode *j = node -> child;
@@ -195,8 +189,37 @@ Jsnode *get_jsnode_in_arr(Jsnode *node, int count) {
 	return NULL;
 }
 
-void del_jsnode_next(Jsnode *node);
-void del_jsnode_chird(Jsnode *node) {
+void upd_node(Jsnode *node1, Jsnode *node2) {
+	if(node1 && node2) {
+		node2 -> next = node1 -> next;
+		*node1 = *node2;
+		free(node2);
+	}
+}
+
+void ins_obj_chird(Jsnode *node1, Jsnode *node2) {
+	if(node1 && node2) {
+		if(node1 -> type != OBJ) { printf("error9!\n"); exit(-1); }
+		if(node1 -> child == NULL) {
+			node1 -> child = node2;
+		} else {
+			Jsnode *i = node1;
+			Jsnode *j = node1 -> child;
+			while(j != NULL) {
+				if(!strcmp(j -> name, node2 -> name)) {
+					upd_node(j, node2);
+					return;
+				}
+				i = j;
+				j = j -> next;
+			}
+			i -> next = node2;
+		}
+	}
+}
+
+void del_first_child(Jsnode *node);
+void del_all_chird(Jsnode *node) {
 	if(node) {
 		switch(node -> type) {
 		case NUL:
@@ -205,9 +228,8 @@ void del_jsnode_chird(Jsnode *node) {
 		case STR: break;
 		case ARR:
 		case OBJ:
-			for(Jsnode *i = node -> child; i != NULL; i = node -> child) {
-				node -> child = i -> next;
-				del_jsnode_next(i);
+			while(node -> child != NULL) {
+				del_first_child(node);
 			}
 			break;
 		default: printf("error12!\n"); exit(-1);
@@ -215,7 +237,27 @@ void del_jsnode_chird(Jsnode *node) {
 	}
 }
 
-void del_jsnode_next(Jsnode *node) {
+void del_first_child(Jsnode *node) {
+	if(node) {
+		switch(node -> type) {
+		case NUL:
+		case FALSE:
+		case TRUE:
+		case STR: break;
+		case ARR:
+		case OBJ: {
+				Jsnode *i = node -> child;
+				node -> child = i -> next;
+				del_all_chird(i);
+				free(i);
+				break;
+			}
+		default: printf("error12!\n"); exit(-1);
+		}
+	}
+}
+
+void del_next(Jsnode *node) {
 	if(node && node -> next) {
 		switch(node -> next -> type) {
 		case NUL:
@@ -231,7 +273,7 @@ void del_jsnode_next(Jsnode *node) {
 		case OBJ: {
 				Jsnode *i = node -> next;
 				node -> next = i -> next;
-				del_jsnode_chird(i);
+				del_all_chird(i);
 				free(i);
 				break;
 			}
@@ -304,7 +346,9 @@ int main(int argc, char *argv[]) {
 	Jsnode *node = newjsnode();
 	next();
 	setjson(node);//printf("%d",node->type);
-	del_jsnode_chird(get_jsnode_in_obj(node, "publisher"));
-	del_jsnode_next(get_jsnode_in_obj(node, "title"));
-	print_jsnode(node, 0);	
+	//del_all_chird(get_in_obj(node, "publisher"));
+	//del_next(get_in_obj(node, "title"));
+	//ins_obj_chird(get_in_obj(node, "publisher"), get_in_obj(node, "title"));
+	//print_jsnode(get_in_obj(node, "title"), 0);
+	print_jsnode(node, 0);
 }
