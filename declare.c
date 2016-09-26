@@ -53,11 +53,6 @@ void next() {
 			strncpy(tks, _p, len);
 			tks[len] = '\0';
 			return;
-		/*} else if(*p == ')' || *p == '*' || *p == '[' || *p == '(' || *p == ']' || *p == ',' || *p == ';') {
-			tks = (char*)malloc(sizeof(char) * 2);
-			tks[0] = *p++;
-			tks[1] = '\0';
-			return;*/
 		}
 		else if(*p == ')') { tks = ")"; p++; return; }
 		else if(*p == '*') { tks = "*"; p++; return; }
