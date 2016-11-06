@@ -74,18 +74,12 @@ Node* atom() { //atom -> int | "(" expr ")"
 
 Node* muldiv() { //muldiv -> atom ["*" muldiv | "/" muldiv]
 	Node *n = atom();
-	if(!strcmp(tks, "*")) {
+	if(!strcmp(tks, "*") || !strcmp(tks, "/")) {
+		char *opr = tks;
 		next();
 		Node *_n = n;
 		n = newNode();
-		n->kind = MUL;
-		n->child[0] = _n;
-		n->child[1] = muldiv();
-	} else if(!strcmp(tks, "/")) {
-		next();
-		Node *_n = n;
-		n = newNode();
-		n->kind = DIV;
+		n->kind = !strcmp(opr, "*")? MUL: DIV;
 		n->child[0] = _n;
 		n->child[1] = muldiv();
 	}
@@ -94,21 +88,15 @@ Node* muldiv() { //muldiv -> atom ["*" muldiv | "/" muldiv]
 
 Node* addsub() { //addsub -> muldiv ["+" addsub | "-" addsub]
 	Node *n = muldiv();
-	if(!strcmp(tks, "+")) {
+	if(!strcmp(tks, "+") || !strcmp(tks, "-")) {
+		char *opr = tks;
 		next();
 		Node *_n = n;
 		n = newNode();
-		n->kind = ADD;
+		n->kind = !strcmp(opr, "+")? ADD: SUB;
 		n->child[0] = _n;
 		n->child[1] = addsub();
-	} else if(!strcmp(tks, "-")) {
-		next();
-		Node *_n = n;
-		n = newNode();
-		n->kind = SUB;
-		n->child[0] = _n;
-		n->child[1] = addsub();
-	}
+	} 
 	return n;
 }
 
