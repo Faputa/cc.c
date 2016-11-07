@@ -116,12 +116,26 @@ int runNode(Node *n) {
 	}
 }
 
+void printNode(Node *n, int indent) {
+	for(int i = 0; i < indent * 2; i++) printf(" ");
+	switch(n->kind) {
+	case ATOM: printf("%d\n", n->value); return;
+	case ADD: printf("+\n"); break;
+	case SUB: printf("-\n"); break;
+	case MUL: printf("*\n"); break;
+	case DIV: printf("/\n"); break;
+	}
+	printNode(n->child[0], indent + 1);
+	printNode(n->child[1], indent + 1);
+}
+
 int main(int argc, char *argv[]) {
 	if(argc != 2) { printf("error!\n"); exit(-1); }
 	p = argv[1];
 	next();
-	int r = runNode(expr());
+	Node *n = expr();
 	if(strcmp(tks, ";") && strcmp(tks, "")) { printf("error!\n"); exit(-1); }
-	printf("%d\n", r);
+	printf("%d\n", runNode(n));
+	printNode(n, 0);
 	return 0;
 }
