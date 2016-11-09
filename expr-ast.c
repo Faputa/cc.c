@@ -83,7 +83,7 @@ Node* expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	} else { printf("error!\n"); exit(-1); }
 	
 	next();
-	if(lev(tks) >= lev(last_opr)) {
+	while(lev(tks) > lev(last_opr)) {
 		char *opr = tks;
 		next();
 		Node *_n = n;
