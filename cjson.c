@@ -246,12 +246,12 @@ void del_first_child(Jsnode *node) {
 		case STR: break;
 		case ARR:
 		case OBJ: {
-				Jsnode *i = node -> child;
-				node -> child = i -> next;
-				del_all_chird(i);
-				free(i);
-				break;
-			}
+			Jsnode *i = node -> child;
+			node -> child = i -> next;
+			del_all_chird(i);
+			free(i);
+			break;
+		}
 		default: printf("error12!\n"); exit(-1);
 		}
 	}
@@ -264,19 +264,19 @@ void del_next(Jsnode *node) {
 		case FALSE:
 		case TRUE:
 		case STR: {
-				Jsnode *i = node -> next;
-				node -> next = i -> next;
-				free(i);
-				break;
-			}
+			Jsnode *i = node -> next;
+			node -> next = i -> next;
+			free(i);
+			break;
+		}
 		case ARR:
 		case OBJ: {
-				Jsnode *i = node -> next;
-				node -> next = i -> next;
-				del_all_chird(i);
-				free(i);
-				break;
-			}
+			Jsnode *i = node -> next;
+			node -> next = i -> next;
+			del_all_chird(i);
+			free(i);
+			break;
+		}
 		default: printf("error12!\n"); exit(-1);
 		}
 	}
