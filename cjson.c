@@ -113,7 +113,7 @@ Jsnode* newjsnode() {
 }
 
 void ins_obj_chird(Jsnode *node1, Jsnode *node2);
-void setjson(Jsnode *node) {
+void parse_json(Jsnode *node) {
 	if(!strcmp(tks, "{")) {
 		next();
 		node -> type = OBJ;
@@ -131,7 +131,7 @@ void setjson(Jsnode *node) {
 					case TRUE: child -> type = tki; break;
 					case NUM: child -> type = tki; child -> num = atof(tks); break;
 					case STR: child -> type = tki; child -> str = tks; break;
-					default: setjson(child);
+					default: parse_json(child);
 				}
 				ins_obj_chird(node, child);
 				next();
@@ -153,7 +153,7 @@ void setjson(Jsnode *node) {
 					case TRUE: node -> type = tki; break;
 					case NUM: node -> type = tki; node -> num = atof(tks); break;
 					case STR: node -> type = tki; node -> str = tks; break;
-					default: setjson(node);
+					default: parse_json(node);
 				}
 				next();
 				if(!strcmp(tks, "]")) {
@@ -345,7 +345,7 @@ int main(int argc, char *argv[]) {
 	
 	Jsnode *node = newjsnode();
 	next();
-	setjson(node);//printf("%d",node->type);
+	parse_json(node);//printf("%d",node->type);
 	//del_all_chird(get_in_obj(node, "publisher"));
 	//del_next(get_in_obj(node, "title"));
 	//ins_obj_chird(get_in_obj(node, "publisher"), get_in_obj(node, "title"));
