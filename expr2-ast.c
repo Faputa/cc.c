@@ -66,8 +66,15 @@ Node* atom() { //atom -> int | "(" expr ")"
 	} else if(!strcmp(tks, "(")) {
 		next();
 		n = expr();
-		if(strcmp(tks, ")")) { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+	} else if(!strcmp(tks, "-")) {
 		next();
+		n = newNode();
+		n->kind = SUB;
+		n->child[0] = newNode();
+		n->child[0]->kind = ATOM;
+		n->child[0]->value = 0;
+		n->child[1] = expr("-");
 	} else { printf("error!\n"); exit(-1); }
 	return n;
 }
