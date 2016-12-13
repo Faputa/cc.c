@@ -1,5 +1,5 @@
-//è¡¨è¾¾å¼è®¡ç®—å™¨
-//ç”¨å‡½æ•°é€’å½’è‡ªåŠ¨å½¢æˆçš„å †æ ˆæ›¿æ¢æ‰‹åŠ¨å †æ ˆsp
+//±í´ïÊ½¼ÆËãÆ÷
+//ÓÃº¯Êıµİ¹é×Ô¶¯ĞÎ³ÉµÄ¶ÑÕ»Ìæ»»ÊÖ¶¯¶ÑÕ»sp
 
 #include <stdio.h>
 #include <malloc.h>
@@ -31,7 +31,7 @@ void next() {
 		else if(*p == '/') { tks = "/"; p++; return; }
 		else if(*p == '(') { tks = "("; p++; return; }
 		else if(*p == ')') { tks = ")"; p++; return; }
-		else { //è·³è¿‡ä¸èƒ½è¯†åˆ«çš„ç¬¦å·
+		else { //Ìø¹ı²»ÄÜÊ¶±ğµÄ·ûºÅ
 			p++;
 		}
 	}
@@ -51,7 +51,7 @@ int lev(char *opr) {
 			lev++;
 		}
 	}
-	return 0; //å…¶ä»–ç¬¦å·
+	return 0; //ÆäËû·ûºÅ
 }
 
 int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
@@ -62,7 +62,7 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	} else if(!strcmp(tks, "(")) {
 		next();
 		a = expr(")");
-		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("æ— æ³•åŒ¹é…åˆ°")"
+		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("ÎŞ·¨Æ¥Åäµ½")"
 	} else if(!strcmp(tks, "-")) {
 		next();
 		a = -expr("-");

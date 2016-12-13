@@ -12,7 +12,9 @@ enum { INT };
 int tki, *sp;
 char *tks, *p;
 
-void next() {
+void expr(void);
+
+void next(void) {
 	tks = ""; tki = -1;
 	while(*p) {
 		if(*p >= '0' && *p <= '9') {
@@ -38,20 +40,22 @@ void next() {
 	}
 }
 
-void expr();
-void atom() { //atom -> int | "(" expr ")"
+void atom(void) { //atom -> int | "(" expr ")"
 	if(tki == INT) {
 		*sp = atoi(tks);
 		next();
 	} else if(!strcmp(tks, "(")) {
 		next();
 		expr();
-		if(strcmp(tks, ")")) { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+	} else if(!strcmp(tks, "-")) {
 		next();
+		atom();
+		*sp = -*sp;
 	} else { printf("error!\n"); exit(-1); }
 }
 
-void muldiv() { //muldiv -> atom ("*" atom | "/" atom)*
+void muldiv(void) { //muldiv -> atom ("*" atom | "/" atom)*
 	atom();
 	while(1) {
 		if(!strcmp(tks, "*")) {
@@ -72,7 +76,7 @@ void muldiv() { //muldiv -> atom ("*" atom | "/" atom)*
 	}
 }
 
-void addsub() { //addsub -> muldiv ("+" muldiv | "-" muldiv)*
+void addsub(void) { //addsub -> muldiv ("+" muldiv | "-" muldiv)*
 	muldiv();
 	while(1) {
 		if(!strcmp(tks, "+")) {
@@ -93,7 +97,7 @@ void addsub() { //addsub -> muldiv ("+" muldiv | "-" muldiv)*
 	}
 }
 
-void expr() { //expr -> addsub
+void expr(void) { //expr -> addsub
 	addsub();
 }
 

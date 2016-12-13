@@ -23,7 +23,9 @@ typedef struct Node {
 int tki;
 char *tks, *p;
 
-void next() {
+Node* expr(void);
+
+void next(void) {
 	tks = ""; tki = -1;
 	while(*p) {
 		if(*p >= '0' && *p <= '9') {
@@ -49,14 +51,13 @@ void next() {
 	}
 }
 
-Node* newNode() {
+Node* newNode(void) {
 	Node *n = (Node*)malloc(sizeof(Node));
 	n->child[0] = n->child[1] = NULL;
 	return n;
 }
 
-Node* expr();
-Node* atom() { //atom -> int | "(" expr ")"
+Node* atom(void) { //atom -> int | "(" expr ")"
 	Node *n;
 	if(tki == INT) {
 		n = newNode();
@@ -74,12 +75,12 @@ Node* atom() { //atom -> int | "(" expr ")"
 		n->child[0] = newNode();
 		n->child[0]->kind = ATOM;
 		n->child[0]->value = 0;
-		n->child[1] = expr("-");
+		n->child[1] = atom();
 	} else { printf("error!\n"); exit(-1); }
 	return n;
 }
 
-Node* muldiv() { //muldiv -> atom ["*" muldiv | "/" muldiv]
+Node* muldiv(void) { //muldiv -> atom ["*" muldiv | "/" muldiv]
 	Node *n = atom();
 	if(!strcmp(tks, "*") || !strcmp(tks, "/")) {
 		char *opr = tks;
@@ -93,7 +94,7 @@ Node* muldiv() { //muldiv -> atom ["*" muldiv | "/" muldiv]
 	return n;
 }
 
-Node* addsub() { //addsub -> muldiv ["+" addsub | "-" addsub]
+Node* addsub(void) { //addsub -> muldiv ["+" addsub | "-" addsub]
 	Node *n = muldiv();
 	if(!strcmp(tks, "+") || !strcmp(tks, "-")) {
 		char *opr = tks;
@@ -107,7 +108,7 @@ Node* addsub() { //addsub -> muldiv ["+" addsub | "-" addsub]
 	return n;
 }
 
-Node* expr() { //expr -> addsub
+Node* expr(void) { //expr -> addsub
 	return addsub();
 }
 

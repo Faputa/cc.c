@@ -13,7 +13,7 @@ enum {
 int tki, *e, *emit;
 char *tks, *p;
 
-void next() {
+void next(void) {
 	tks = ""; tki = -1;
 	while(*p) {
 		if(*p >= '0' && *p <= '9') {
@@ -59,15 +59,20 @@ int lev(char *opr) {
 void expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	if(tki == INT) {
 		//*sp = atoi(tks);
-		*e++ = SET;
-		*e++ = atoi(tks);
+		*e++ = SET; *e++ = atoi(tks);
+		next();
 	} else if(!strcmp(tks, "(")) {
 		next();
 		expr(")");
-		if(strcmp(tks, ")")) { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+	} else if(!strcmp(tks, "-")) {
+		next();
+		*e++ = SET; *e++ = 0;
+		*e++ = PUSH;
+		expr("-");
+		*e++ = SUB;
 	} else { printf("error!\n"); exit(-1); }
 	
-	next();
 	while(lev(tks) > lev(last_opr)) {
 		char *opr = tks;
 		//sp++;

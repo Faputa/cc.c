@@ -21,7 +21,7 @@ typedef struct Node {
 int tki;
 char *tks, *p;
 
-void next() {
+void next(void) {
 	tks = ""; tki = -1;
 	while(*p) {
 		if(*p >= '0' && *p <= '9') {
@@ -47,7 +47,7 @@ void next() {
 	}
 }
 
-Node* newNode() {
+Node* newNode(void) {
 	Node *n = (Node*)malloc(sizeof(Node));
 	n->child[0] = n->child[1] = NULL;
 	return n;
