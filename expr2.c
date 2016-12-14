@@ -1,6 +1,7 @@
 //表达式计算器
 //递归下降分析
 //遇到终结符必须主动移动tk
+//!!!error!!!
 
 #include <stdio.h>
 #include <malloc.h>

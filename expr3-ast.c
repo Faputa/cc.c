@@ -1,7 +1,6 @@
 //表达式计算器
 //递归下降分析
 //遇到终结符必须主动移动tk
-//!!!error!!!
 
 #include <stdio.h>
 #include <malloc.h>
@@ -21,7 +20,7 @@ typedef struct Node {
 	struct Node *child[2];
 } Node;
 
-int tki;
+int tki, *sp;
 char *tks, *p;
 
 Node* expr(void);
@@ -79,29 +78,29 @@ Node* atom(void) { //atom -> int | "(" expr ")"
 	return n;
 }
 
-Node* muldiv(void) { //muldiv -> atom ["*" muldiv | "/" muldiv]
+Node* muldiv(void) { //muldiv -> atom ("*" atom | "/" atom)*
 	Node *n = atom();
-	if(!strcmp(tks, "*") || !strcmp(tks, "/")) {
+	while(!strcmp(tks, "*") || !strcmp(tks, "/")) {
 		char *opr = tks;
 		next();
 		Node *_n = n;
 		n = !strcmp(opr, "*")? newNode(MUL): newNode(DIV);
 		n->child[0] = _n;
-		n->child[1] = muldiv();
+		n->child[1] = atom();
 	}
 	return n;
 }
 
-Node* addsub(void) { //addsub -> muldiv ["+" addsub | "-" addsub]
+Node* addsub(void) { //addsub -> muldiv ("+" muldiv | "-" muldiv)*
 	Node *n = muldiv();
-	if(!strcmp(tks, "+") || !strcmp(tks, "-")) {
+	while(!strcmp(tks, "+") || !strcmp(tks, "-")) {
 		char *opr = tks;
 		next();
 		Node *_n = n;
 		n = !strcmp(opr, "+")? newNode(ADD): newNode(SUB);
 		n->child[0] = _n;
-		n->child[1] = addsub();
-	} 
+		n->child[1] = muldiv();
+	}
 	return n;
 }
 

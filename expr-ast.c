@@ -47,8 +47,9 @@ void next(void) {
 	}
 }
 
-Node* newNode(void) {
+Node* newNode(int kind) {
 	Node *n = (Node*)malloc(sizeof(Node));
+	n->kind = kind;
 	n->child[0] = n->child[1] = NULL;
 	return n;
 }
@@ -73,8 +74,7 @@ int lev(char *opr) {
 Node* expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	Node *n;
 	if(tki == INT) {
-		n = newNode();
-		n->kind = ATOM;
+		n = newNode(ATOM);
 		n->value = atoi(tks);
 		next();
 	} else if(!strcmp(tks, "(")) {
@@ -83,10 +83,8 @@ Node* expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("ÎÞ·¨Æ¥Åäµ½")"
 	} else if(!strcmp(tks, "-")) {
 		next();
-		n = newNode();
-		n->kind = SUB;
-		n->child[0] = newNode();
-		n->child[0]->kind = ATOM;
+		n = newNode(SUB);
+		n->child[0] = newNode(ATOM);
 		n->child[0]->value = 0;
 		n->child[1] = expr("-");
 	} else { printf("error!\n"); exit(-1); }
@@ -95,7 +93,7 @@ Node* expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 		char *opr = tks;
 		next();
 		Node *_n = n;
-		n = newNode();
+		n = newNode(0);
 		n->child[0] = _n;
 		n->child[1] = expr(opr);
 		if (!strcmp(opr, "+")) n->kind = ADD;
