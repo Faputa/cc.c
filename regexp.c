@@ -1,4 +1,4 @@
-//ÕıÔò±í´ïÊ½
+ï»¿//æ­£åˆ™è¡¨è¾¾å¼
 
 #include <stdio.h>
 #include <malloc.h>
@@ -119,7 +119,7 @@ void genNfa(AstNode *ast, NfaNode *bgn, NfaNode *end) {
 
 int runNfa(char *str, NfaNode *bgn, NfaNode *end) {
 	int r = 0;
-	if(*str == '\0') return 1;
+	if(*str == '\0' && bgn == end) return 1;
 	for(NfaLine *i = bgn->line; i; i = i->next) {
 		if(i->accept == '\0') {
 			r = runNfa(str, i->end, end);
