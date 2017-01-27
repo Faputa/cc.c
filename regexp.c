@@ -121,7 +121,7 @@ int runNfa(char *str, NfaNode *bgn, NfaNode *end) {
 	int r = 0;
 	if(*str == '\0' && bgn == end) return 1;
 	for(NfaLine *i = bgn->line; i; i = i->next) {
-		if(i->accept == '\0') {
+		if(i->accept == '\0' && bgn != end) {
 			r = runNfa(str, i->end, end);
 		} else if(i->accept == *str) {
 			r = runNfa(str + 1, i->end, end);
