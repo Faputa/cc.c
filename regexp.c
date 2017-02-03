@@ -48,9 +48,9 @@ NfaNode* newNfaNode(void) {
 void addNfaEdge(char accept, NfaNode *bgn, NfaNode *end) {
 	NfaEdge *p = bgn->edge;
 	bgn->edge = (NfaEdge*)malloc(sizeof(NfaEdge));
-	bgn->edge->next = p;
 	bgn->edge->accept = accept;
 	bgn->edge->end = end;
+	bgn->edge->next = p;
 }
 
 void printAstNode(AstNode *n, int indent) {
