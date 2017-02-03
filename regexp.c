@@ -45,13 +45,12 @@ NfaNode* newNfaNode(void) {
 	return n;
 }
 
-NfaEdge* newNfaEdge(char accept, NfaNode *bgn, NfaNode *end) {
-	NfaEdge *next = bgn->edge;
+void addNfaEdge(char accept, NfaNode *bgn, NfaNode *end) {
+	NfaEdge *p = bgn->edge;
 	bgn->edge = (NfaEdge*)malloc(sizeof(NfaEdge));
-	bgn->edge->next = next;
+	bgn->edge->next = p;
 	bgn->edge->accept = accept;
 	bgn->edge->end = end;
-	return bgn->edge;
 }
 
 void printAstNode(AstNode *n, int indent) {
@@ -95,7 +94,7 @@ AstNode* expr(char last_opr) {
 
 void genNfa(AstNode *ast, NfaNode *bgn, NfaNode *end) {
 	if(ast->kind == ATOM) {
-		newNfaEdge(ast->value, bgn, end);
+		addNfaEdge(ast->value, bgn, end);
 	} else if(ast->kind == CHOICE) {
 		genNfa(ast->child[0], bgn, end);
 		genNfa(ast->child[1], bgn, end);
@@ -104,7 +103,7 @@ void genNfa(AstNode *ast, NfaNode *bgn, NfaNode *end) {
 		genNfa(ast->child[0], bgn, tmp);
 		genNfa(ast->child[1], tmp, end);
 	} else if(ast->kind == CLOSURE) {
-		newNfaEdge('\0', bgn, end);
+		addNfaEdge('\0', bgn, end);
 		genNfa(ast->child[0], bgn, end);
 		genNfa(ast->child[0], end, end);
 	} else assert(0);
