@@ -7,7 +7,7 @@
 
 typedef struct AstNode AstNode;
 typedef struct NfaNode NfaNode;
-typedef struct NfaLine NfaLine;
+typedef struct NfaEdge NfaEdge;
 
 enum { //AST kind
 	ATOM,
@@ -21,13 +21,13 @@ struct AstNode {
 };
 
 struct NfaNode {
-	NfaLine *line;
+	NfaEdge *edge;
 };
 
-struct NfaLine {
+struct NfaEdge {
 	char accept;
 	NfaNode *end;
-	NfaLine *next;
+	NfaEdge *next;
 };
 
 char *p;
@@ -41,24 +41,17 @@ AstNode* newAstNode(int kind) {
 
 NfaNode* newNfaNode(void) {
 	NfaNode *n = (NfaNode*)malloc(sizeof(NfaNode));
-	n->line = NULL;
+	n->edge = NULL;
 	return n;
 }
 
-NfaLine* newNfaLine(char accept, NfaNode *bgn, NfaNode *end) {
-	NfaLine *l;
-	if(bgn->line == NULL) {
-		bgn->line = (NfaLine*)malloc(sizeof(NfaLine));
-		l = bgn->line;
-	} else {
-		for(l = bgn->line; l->next; l = l->next);
-		l->next = (NfaLine*)malloc(sizeof(NfaLine));
-		l = l->next;
-	}
-	l->accept = accept;
-	l->end = end;
-	l->next = NULL;
-	return l;
+NfaEdge* newNfaEdge(char accept, NfaNode *bgn, NfaNode *end) {
+	NfaEdge *next = bgn->edge;
+	bgn->edge = (NfaEdge*)malloc(sizeof(NfaEdge));
+	bgn->edge->next = next;
+	bgn->edge->accept = accept;
+	bgn->edge->end = end;
+	return bgn->edge;
 }
 
 void printAstNode(AstNode *n, int indent) {
@@ -102,7 +95,7 @@ AstNode* expr(char last_opr) {
 
 void genNfa(AstNode *ast, NfaNode *bgn, NfaNode *end) {
 	if(ast->kind == ATOM) {
-		newNfaLine(ast->value, bgn, end);
+		newNfaEdge(ast->value, bgn, end);
 	} else if(ast->kind == CHOICE) {
 		genNfa(ast->child[0], bgn, end);
 		genNfa(ast->child[1], bgn, end);
@@ -111,7 +104,7 @@ void genNfa(AstNode *ast, NfaNode *bgn, NfaNode *end) {
 		genNfa(ast->child[0], bgn, tmp);
 		genNfa(ast->child[1], tmp, end);
 	} else if(ast->kind == CLOSURE) {
-		newNfaLine('\0', bgn, end);
+		newNfaEdge('\0', bgn, end);
 		genNfa(ast->child[0], bgn, end);
 		genNfa(ast->child[0], end, end);
 	} else assert(0);
@@ -120,7 +113,7 @@ void genNfa(AstNode *ast, NfaNode *bgn, NfaNode *end) {
 int runNfa(char *str, NfaNode *bgn, NfaNode *end) {
 	int r = 0;
 	if(*str == '\0' && bgn == end) return 1;
-	for(NfaLine *i = bgn->line; i; i = i->next) {
+	for(NfaEdge *i = bgn->edge; i; i = i->next) {
 		if(i->accept == '\0' && bgn != end) {
 			r = runNfa(str, i->end, end);
 		} else if(i->accept == *str) {
