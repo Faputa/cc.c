@@ -1,163 +1,24 @@
 //复杂声明解析器
 //能够解析指针、数组、函数
 //前置符号递归读取，后置符号循环读取
-//识别模式：说明符 声明符 [;]
 
+#include "cc.h"
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
-#define MAXSIZE 1000
-#define BUFSIZE 100
 
-typedef struct Type {
-	int base;
-	int count;
-	struct Type *rely;
-} Type;
-
-enum {
-	//type
-	INT, CHAR, PTR, ARR, FUN,
-	//keyword
-	Int, Char,
-	//other integer
-	ID
-};
-
-Type *ty, *tyls;
-char *p, *name = NULL, *tks;
-int tki;
-
-void next() {
-	tks = ""; tki = -1;
-	while(*p) {
-		if((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_') {
-			int len = 0; char *_p = p;
-			while((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') || *p == '_') {
-				len++; p++;
-			}
-			tks = (char*)malloc(sizeof(char) * (len+1));
-			strncpy(tks, _p, len);
-			tks[len] = '\0';
-			if(!strcmp(tks, "int")) tki = Int;
-			else if(!strcmp(tks, "char")) tki = Char;
-			else tki = ID;
-			return;
-		} else if(*p >= '0' && *p <= '9') {
-			int len = 0; char *_p = p;
-			while(*p >= '0' && *p <= '9') {
-				len++; p++;
-			}
-			tki = INT;
-			tks = (char*)malloc(sizeof(char) * (len+1));
-			strncpy(tks, _p, len);
-			tks[len] = '\0';
-			return;
-		}
-		else if(*p == ')') { tks = ")"; p++; return; }
-		else if(*p == '*') { tks = "*"; p++; return; }
-		else if(*p == '[') { tks = "["; p++; return; }
-		else if(*p == '(') { tks = "("; p++; return; }
-		else if(*p == ']') { tks = "]"; p++; return; }
-		else if(*p == ',') { tks = ","; p++; return; }
-		else if(*p == ';') { tks = ";"; p++; return; }
-		else { //跳过不能识别的符号
-			p++;
-		}
-	}
-}
-
-Type* deriv_type(int base, Type *rely, int count) { //类型生成
-	if(rely == NULL) {
-		if(base == INT || base == CHAR) {
-			for(Type *i = tyls; i < ty; i++) {
-				if(i -> base == base
-				&& i -> rely == NULL) return i;
-			}
-			ty -> base = base;
-			ty -> rely = NULL;
-			return ty++;
-		}/* else if(base == STR) {
-			for(Type *i = tyls; i < ty; i++) {
-				if(i -> base == PTR
-				&& i -> rely == deriv_type(CHAR, NULL)) return i;
-			}
-			Type *rely = deriv_type(CHAR, NULL);
-			ty -> base = PTR;
-			ty -> rely = rely;
-			return ty++;
-		}*/
-	} else {
-		if(base == PTR) {
-			for(Type *i = tyls; i < ty; i++) {
-				if(i -> base == base
-				&& i -> rely == rely) return i;
-			}
-			ty -> base = base;
-			ty -> rely = rely;
-			return ty++;
-		} else if(base == ARR) {
-			if(rely -> base == FUN) { printf("error!\n"); exit(-1); }
-			for(Type *i = tyls; i < ty; i++) {
-				if(i -> base == base
-				&& i -> rely == rely
-				&& i -> count == count) return i;
-			}
-			ty -> base = base;
-			ty -> rely = rely;
-			ty -> count = count;
-			return ty++;
-		} else if(base == FUN) {
-			if(rely -> base == FUN || rely -> base == ARR) { printf("error!\n"); exit(-1); }
-			for(Type *i = tyls; i < ty; i++) {
-				if(i -> base == base
-				&& i -> rely == rely
-				&& i -> count == count) return i;
-			}
-			ty -> base = base;
-			ty -> rely = rely;
-			ty -> count = count;
-			return ty++;
-		}
-	}
-	printf("error!\n"); exit(-1);
-}
-
-void print_type(Type *type) {
-	if(type -> base == PTR) {
-		printf("指向");
-		print_type(type -> rely);
-		printf("的指针");
-	} else if(type -> base == ARR) {
-		printf("拥有%d个类型为", type -> count);
-		print_type(type -> rely);
-		printf("的元素的数组");
-	} else if(type -> base == FUN) {
-		printf("需要%d个参数且返回值为", type -> count);
-		print_type(type -> rely);
-		printf("的函数");
-	} else if(type -> base == INT) {
-		printf("整型");
-	} else if(type -> base == CHAR) {
-		printf("字符型");
-	}
-}
-
-Type* specifier() {
+static Type* specifier(void) {
 	if(tki == Int) {
 		next();
 		return deriv_type(INT, NULL, 0);
-	} else if(tki == Char) {
-		next();
-		return deriv_type(CHAR, NULL, 0);
-	} else { printf("error!\n"); exit(-1); }
+	} else { printf("error11!\n"); exit(-1); }
 }
 
-int lev(char *opr) {
+static int lev(char *opr) {
 	char *oprs[] = {
-		")",
+		")", "]",
 		"", "*",
-		"", "[", "("
+		"", "(", "["
 	};
 	int lev = 1;
 	for(int i = 0; i < sizeof(oprs) / sizeof(*oprs); i++) {
@@ -170,8 +31,8 @@ int lev(char *opr) {
 	return 0; //其他符号
 }
 
-Type* declarator(Type *type); //前置声明
-int* complex(char *last_opr, int *cpx) { //复杂类型分析
+static Id* declarator(Type *type, int scope);
+static int* complex(char *last_opr, int *cpx) { //复杂类型分析
 	//前置符号
 	if(!strcmp(tks, "*")) { //指针
 		next();
@@ -181,13 +42,12 @@ int* complex(char *last_opr, int *cpx) { //复杂类型分析
 	} else if(!strcmp(tks, "(")) { //括号
 		next();
 		cpx = complex(")", cpx);
-		if(strcmp(tks, ")")) { printf("error!\n"); exit(-1); } //"("无法匹配到")"
+		if(strcmp(tks, ")")) { printf("error12!\n"); exit(-1); } //"("无法匹配到")"
 		next();
 	} else if(tki == ID) {
-		if(!name) name = tks;
-		//(id - 1) -> name = tks;
+		(id - 1) -> name = tks;
 		next();
-	} else { printf("error!\n"); exit(-1); }
+	} else { printf("error13!\n"); exit(-1); }
 	
 	//next();
 	//后置符号
@@ -196,59 +56,134 @@ int* complex(char *last_opr, int *cpx) { //复杂类型分析
 			next();
 			int count = 0;
 			if(strcmp(tks, "]")) {
-				if(tki == INT) count = atoi(tks);
-				else { printf("error!\n"); exit(-1); }
-				next();
+				count = expr_int("");
 			}
 			*cpx++ = count;
 			*cpx++ = ARR;
-			if(strcmp(tks, "]")) { printf("error!\n"); exit(-1); }
-		} else if(!strcmp(tks, "(")) { //函数
+			if(strcmp(tks, "]")) { printf("error15!\n"); exit(-1); }
+		} else if(!strcmp(tks, "(")) { //函数或函数指针
 			int count = 0;
+			inparam();
 			next();
 			if(strcmp(tks, ")")) {
 				while(1) {
 					count++;
 					Type *type = specifier();
-					declarator(type);
+					declarator(type, ARG);
 					if(!strcmp(tks, ")")) break;
 					else if(!strcmp(tks, ",")) next();
-					else { printf("error!\n"); exit(-1); }
+					else { printf("error16!\n"); exit(-1); }
 				}
 			}
 			*cpx++ = count;
 			*cpx++ = FUN;
-		} else { printf("error!\n"); exit(-1); }
+		} else { printf("error17!\n"); exit(-1); }
 		next();
 	}
 	return cpx; //update cpx
 }
 
-Type* declarator(Type *type) {
-	//if(strcmp(tks, "*") && strcmp(tks, "(") && tki != ID) { printf("error!\n"); exit(-1); }
-	//Id *this_id = id++;
-	int cpxsk[BUFSIZE]; //复杂类型栈
-	int *cpx = cpxsk; //复杂类型栈栈顶指针
+static Id* declarator(Type *type, int scope) {
+	Id *this_id = id++;
+	this_id -> class = scope;
+	int cpxs[BUFSIZE]; //复杂类型栈
+	int *cpx = cpxs; //复杂类型栈栈顶指针
 	cpx = complex("", cpx);
-	while(cpx > cpxsk) {
+	while(cpx > cpxs) {
 		int base = *--cpx;
 		int count = *--cpx;
 		type = deriv_type(base, type, count);
 	}
-	//setid(this_id, type);
-	return type;
+	if(type -> base == PTR) { //函数指针*
+		Type *rely = type -> rely;
+		while(rely -> base == PTR) rely = rely -> rely;
+		if(rely -> base == FUN) id = this_id + 1;
+	} else if(type -> base == FUN && this_id -> class == ARG) { //函数为形参
+		type = deriv_type(PTR, type, 0);
+		id = this_id + 1;
+	} else if(type -> base == ARR && this_id -> class == ARG) { //数组为形参
+		type = deriv_type(PTR, type -> rely, 0);
+	}
+	setid(this_id, type);
+	return this_id;
 }
 
-int main(int argc, char *argv[]) {
-	if(argc != 2) { printf("error!\n"); exit(-1); }
-	tyls = ty = (Type*)malloc(MAXSIZE * sizeof(Type));
-	p = argv[1];
-	next();
-	Type *type = specifier();
-	type = declarator(type);
-	if(strcmp(tks, ";") && strcmp(tks, "")) { printf("error!\n"); exit(-1); }
-	printf("%s为", name);
-	print_type(type);
-	printf("\n");
-	return 0;
+void declare(int scope) {
+	static int varc;
+	if(scope == GLO) {
+		Type *type = specifier();
+		Id *this_id = declarator(type, GLO);
+		if(this_id -> type -> base == FUN) {
+			if(!strcmp(tks, "{")) {
+				infunc();
+				varc = 0;
+				this_id -> offset = e - emit;
+				*e++ = PUSH; *e++ = BP;
+				*e++ = MOV; *e++ = BP; *e++ = SP; //bp = sp
+				*e++ = INC; *e++ = SP; int *_e = e++;
+				next();
+				while(strcmp(tks, "}")) {
+					if(tki == Int) declare(LOC);
+					else stmt();
+					next();
+				}
+				*_e = varc;
+				*e++ = MOV; *e++ = SP; *e++ = BP; //sp = bp
+				*e++ = POP; *e++ = BP;
+				*e++ = POP; *e++ = IP;
+				outfunc();
+			} else if(!strcmp(tks, ";")) {
+				id = this_id + 1;
+			} else { printf("error19!\n"); exit(-1); }
+		} else {
+			while(1) {
+				if(!strcmp(tks, "=")) {
+					next();
+					if(this_id -> type -> base == INT) {
+						*(data + this_id -> offset) = expr_int("");
+					} else if(this_id -> type -> base == PTR) {
+						*(data + this_id -> offset) = expr_null();
+					} else if(this_id -> type -> base == ARR) {
+						expr_arr(GLO, this_id -> type, this_id -> offset);
+					} else { printf("error20!\n"); exit(-1); }
+				} else {
+					if(this_id -> type -> base == INT) *(data + this_id -> offset) = 0;
+					else if(this_id -> type -> base == PTR) *(data + this_id -> offset) = 0;
+					else if(this_id -> type -> base == ARR) memset(data + this_id -> offset, 0, this_id -> type -> count);
+					else { printf("error21!\n"); exit(-1); }
+				}
+				if(!strcmp(tks, ";")) break;
+				else if(!strcmp(tks, ",")) {
+					next();
+					this_id = declarator(type, GLO);
+				} else { printf("error22!\n"); exit(-1); }
+			}
+		}
+	} else if(scope == LOC) {
+		Type *type = specifier();
+		while(1) {
+			//varc++;
+			Id *this_id = declarator(type, LOC);
+			if(!strcmp(tks, "=")) {
+				next();
+				if(this_id -> type -> base == INT) {
+					*e++ = AL; *e++ = this_id -> offset;
+					*e++ = PUSH; *e++ = AX;
+					if(this_id -> type != expr("").type) { printf("error23!\n"); exit(-1); }
+					*e++ = ASS;
+				} else if(this_id -> type -> base == PTR) {
+					*e++ = AL; *e++ = this_id -> offset;
+					*e++ = PUSH; *e++ = AX;
+					if(this_id -> type != expr("").type) { printf("error24!\n"); exit(-1); }
+					*e++ = ASS;
+				} else if(this_id -> type -> base == ARR) {
+					expr_arr(LOC, this_id -> type, this_id -> offset);
+				}
+			}
+			varc += typesize(this_id -> type);
+			if(!strcmp(tks, ";")) break;
+			else if(!strcmp(tks, ",")) next();
+			else { printf("error25!\n"); exit(-1); }
+		}
+	}
 }
