@@ -110,33 +110,33 @@ void next() {
 }
 
 void setid(char *tks, int type) {
-	for(Id *i = id++; i -> csmk == ID; i--) {
-		if(!strcmp(tks, i -> name)) { printf("error!\n"); exit(-1); }
+	for(Id *i = id++; i->csmk == ID; i--) {
+		if(!strcmp(tks, i->name)) { printf("error!\n"); exit(-1); }
 	}
 	
-	id -> name = tks;
-	id -> type = type;
-	id -> csmk = ID;
+	id->name = tks;
+	id->type = type;
+	id->csmk = ID;
 	
 	Id *last_id = id - 1;
-	if(last_id -> csmk != ID) {
-		id -> class = last_id -> csmk;
+	if(last_id->csmk != ID) {
+		id->class = last_id->csmk;
 	} else {
-		id -> class = last_id -> class;
+		id->class = last_id->class;
 	}
 	
-	while(last_id -> csmk == LOC || last_id -> type == FUN || last_id -> type == API) last_id--; //可以证明：type等于FUN或API时csmk一定等于ID
-	if(id -> class == GLO) {
-		if(last_id -> csmk == GLO) {
-			if(type == INT) id -> offset = MAXSIZE - 1;
+	while(last_id->csmk == LOC || last_id->type == FUN || last_id->type == API) last_id--; //可以证明：type等于FUN或API时csmk一定等于ID
+	if(id->class == GLO) {
+		if(last_id->csmk == GLO) {
+			if(type == INT) id->offset = MAXSIZE - 1;
 		} else {
-			if(type == INT) id -> offset = last_id -> offset - 1;
+			if(type == INT) id->offset = last_id->offset - 1;
 		}
 	} else {
-		if(last_id -> csmk == FUN || last_id -> offset < 0) { //offset小于0为参数，且此时csmk不可能为LOC
-			id -> offset = 0;
+		if(last_id->csmk == FUN || last_id->offset < 0) { //offset小于0为参数，且此时csmk不可能为LOC
+			id->offset = 0;
 		} else {
-			if(last_id -> type == INT) id -> offset = last_id -> offset + 1;
+			if(last_id->type == INT) id->offset = last_id->offset + 1;
 		}
 	}
 	/*for(Id*i=idls;i<=id;i++){ //打印符号表
@@ -150,17 +150,17 @@ void setid(char *tks, int type) {
 
 Id* getid(char *tks) {
 	for(Id *i = id; i >= idls; i--) {
-		if(i -> csmk == ID && !strcmp(tks, i -> name)) return i;
+		if(i->csmk == ID && !strcmp(tks, i->name)) return i;
 	}
 	printf("error!\n"); exit(-1);
 }
 
 void inblock() {
-	(++id) -> csmk = LOC;
+	(++id)->csmk = LOC;
 }
 
 void outblock() {
-	while(id -> csmk != LOC) {
+	while(id->csmk != LOC) {
 		//*e++ = POP; *e++ = AX;
 		//*e++ = DEC; *e++ = SP; *e++ = 1;
 		id--;
@@ -197,10 +197,10 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 		next();
 	} else if(tki == ID) {
 		Id *this_id = getid(tks);
-		type = this_id -> type;
+		type = this_id->type;
 		if(type == FUN) {
 			type = INT;
-			int callee = this_id -> offset;
+			int callee = this_id->offset;
 			next(); if(strcmp(tks, "(")) { printf("error!\n"); exit(-1); }
 			next();
 			//*e++ = PUSH; *e++ = BP;
@@ -208,7 +208,7 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 			while(strcmp(tks, ")")) { //参数入栈
 				argc++;
 				int type = expr("");
-				//if(type != (++this_id) -> type) { printf("error!\n"); exit(-1); } //参数检查
+				//if(type != (++this_id)->type) { printf("error!\n"); exit(-1); } //参数检查
 				if(type == INT) {
 					*e++ = PUSH; *e++ = AX;
 				} else { printf("error!\n"); exit(-1); }
@@ -222,7 +222,7 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 			*e++ = DEC; *e++ = SP; *e++ = argc;
 		} else if(type == API) {
 			type = INT;
-			int callee = this_id -> offset;
+			int callee = this_id->offset;
 			next(); if(strcmp(tks, "(")) { printf("error!\n"); exit(-1); }
 			next();
 			while(strcmp(tks, ")")) { //参数入栈
@@ -234,7 +234,7 @@ int expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 			}
 			*e++ = callee;
 		} else if(type == INT) {
-			*e++ = this_id -> class == GLO ? AG: AL; *e++ = this_id -> offset;
+			*e++ = this_id->class == GLO ? AG: AL; *e++ = this_id->offset;
 			is_lvalue = 1;
 		}
 		next();
@@ -399,9 +399,9 @@ void declare(int env) {
 		next();
 		if(!strcmp(tks, "(")) {
 			varc = 0;
-			id -> type = FUN;
-			id -> offset = e - emit;
-			(++id) -> csmk = FUN; //infunc
+			id->type = FUN;
+			id->offset = e - emit;
+			(++id)->csmk = FUN; //infunc
 			*e++ = PUSH; *e++ = BP;
 			*e++ = MOV; *e++ = BP; *e++ = SP; //bp = sp
 			*e++ = INC; *e++ = SP; int *_e = e++;
@@ -423,7 +423,7 @@ void declare(int env) {
 					else { printf("error!\n"); exit(-1); }
 				}
 			}
-			for(Id *i = id; i -> csmk != FUN; i--) i -> offset -= argc + 2;
+			for(Id *i = id; i->csmk != FUN; i--) i->offset -= argc + 2;
 			next();
 			if(strcmp(tks, "{")) { printf("error!\n"); exit(-1); }
 			next();
@@ -436,18 +436,18 @@ void declare(int env) {
 			*e++ = MOV; *e++ = SP; *e++ = BP; //sp = bp
 			*e++ = POP; *e++ = BP;
 			*e++ = POP; *e++ = IP;
-			while(id -> csmk != FUN) id--; id--; //outfunc
+			while(id->csmk != FUN) id--; id--; //outfunc
 		} else {
 			while(1) {
 				if(!strcmp(tks, "=")) {
 					next();
 					if(type == INT) {
 						if(tki != INT) { printf("error!\n"); exit(-1); }
-						*(data + id -> offset) = atoi(tks);
+						*(data + id->offset) = atoi(tks);
 					} else { printf("error!\n"); exit(-1); }
 					next();
 				} else {
-					if(type == INT) *(data + id -> offset) = 0;
+					if(type == INT) *(data + id->offset) = 0;
 				}
 				if(!strcmp(tks, ";")) break;
 				else if(!strcmp(tks, ",")) {
@@ -471,7 +471,7 @@ void declare(int env) {
 				next();
 				if(type == INT) {
 					//if(tki != INT) { printf("error!\n"); exit(-1); }
-					*e++ = AL; *e++ = id -> offset;
+					*e++ = AL; *e++ = id->offset;
 					*e++ = PUSH; *e++ = AX;
 					if(type != expr("")) { printf("error10!\n"); exit(-1); }//*e++ = SET; *e++ = AX; *e++ = atoi(tks);
 					*e++ = ASS;
@@ -593,20 +593,20 @@ int main(int argc, char *argv[]) {
 	*e++ = JMP; int *_main = e++;
 	*_exit = e - emit; *e++ = EXIT;
 	
-	id -> csmk = GLO; //inglobal
+	id->csmk = GLO; //inglobal
 	char *api[] = {
 		"print", "endl", "space", "scan"
 	};
 	for(int i = 0; i < sizeof(api) / sizeof(*api); i++) {
 		setid(api[i], API);
-		id -> offset = PRINT + i;
+		id->offset = PRINT + i;
 	}
 	next();
 	while(strcmp(tks, "") || tki != -1) {
 		declare(GLO);
 		next();
 	}
-	*_main = getid("main") -> offset;
+	*_main = getid("main")->offset;
 	
 	//print
 	if(src) {

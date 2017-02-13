@@ -58,7 +58,7 @@ Node* newNode(int kind) {
 	return n;
 }
 
-Node* atom(void) { //atom -> int | "(" expr ")"
+Node* atom(void) { //atom->int | "(" expr ")"
 	Node *n;
 	if(tki == INT) {
 		n = newNode(ATOM);
@@ -78,7 +78,7 @@ Node* atom(void) { //atom -> int | "(" expr ")"
 	return n;
 }
 
-Node* muldiv(void) { //muldiv -> atom ("*" atom | "/" atom)*
+Node* muldiv(void) { //muldiv->atom ("*" atom | "/" atom)*
 	Node *n = atom();
 	while(!strcmp(tks, "*") || !strcmp(tks, "/")) {
 		char *opr = tks;
@@ -91,7 +91,7 @@ Node* muldiv(void) { //muldiv -> atom ("*" atom | "/" atom)*
 	return n;
 }
 
-Node* addsub(void) { //addsub -> muldiv ("+" muldiv | "-" muldiv)*
+Node* addsub(void) { //addsub->muldiv ("+" muldiv | "-" muldiv)*
 	Node *n = muldiv();
 	while(!strcmp(tks, "+") || !strcmp(tks, "-")) {
 		char *opr = tks;
@@ -104,7 +104,7 @@ Node* addsub(void) { //addsub -> muldiv ("+" muldiv | "-" muldiv)*
 	return n;
 }
 
-Node* expr(void) { //expr -> addsub
+Node* expr(void) { //expr->addsub
 	return addsub();
 }
 

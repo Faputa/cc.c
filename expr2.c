@@ -41,7 +41,7 @@ void next(void) {
 	}
 }
 
-void atom(void) { //atom -> int | "(" expr ")"
+void atom(void) { //atom->int | "(" expr ")"
 	if(tki == INT) {
 		*sp = atoi(tks);
 		next();
@@ -56,7 +56,7 @@ void atom(void) { //atom -> int | "(" expr ")"
 	} else { printf("error!\n"); exit(-1); }
 }
 
-void muldiv(void) { //muldiv -> atom ["*" muldiv | "/" muldiv]
+void muldiv(void) { //muldiv->atom ["*" muldiv | "/" muldiv]
 	atom();
 	if(!strcmp(tks, "*")) {
 		sp++;
@@ -75,7 +75,7 @@ void muldiv(void) { //muldiv -> atom ["*" muldiv | "/" muldiv]
 	}
 }
 
-void addsub(void) { //addsub -> muldiv ["+" addsub | "-" addsub]
+void addsub(void) { //addsub->muldiv ["+" addsub | "-" addsub]
 	muldiv();
 	if(!strcmp(tks, "+")) {
 		sp++;
@@ -94,7 +94,7 @@ void addsub(void) { //addsub -> muldiv ["+" addsub | "-" addsub]
 	}
 }
 
-void expr(void) { //expr -> addsub
+void expr(void) { //expr->addsub
 	addsub();
 }
 
