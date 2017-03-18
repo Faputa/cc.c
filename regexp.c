@@ -53,13 +53,13 @@ void addNfaEdge(char accept, NfaNode *bgn, NfaNode *end) {
 	bgn->edge->next = p;
 }
 
-void printAstNode(AstNode *n, int indent) {
+void printAst(AstNode *n, int indent) {
 	for(int i = 0; i < indent * 2; i++) printf(" ");
 	switch(n->kind) {
 	case ATOM: printf("%c\n", n->value); return;
-	case CLOSURE: printf("*\n"); printAstNode(n->child[0], indent + 1); break;
-	case CHOICE: printf("|\n"); printAstNode(n->child[0], indent + 1); printAstNode(n->child[1], indent + 1); break;
-	case CONNECT: printf(".\n"); printAstNode(n->child[0], indent + 1); printAstNode(n->child[1], indent + 1); break;
+	case CLOSURE: printf("*\n"); printAst(n->child[0], indent + 1); break;
+	case CHOICE: printf("|\n"); printAst(n->child[0], indent + 1); printAst(n->child[1], indent + 1); break;
+	case CONNECT: printf(".\n"); printAst(n->child[0], indent + 1); printAst(n->child[1], indent + 1); break;
 	}
 }
 
@@ -104,7 +104,7 @@ void genNfa(AstNode *ast, NfaNode *bgn, NfaNode *end) {
 		genNfa(ast->child[1], tmp, end);
 	} else if(ast->kind == CLOSURE) {
 		addNfaEdge('\0', bgn, end);
-		genNfa(ast->child[0], bgn, end);
+		//genNfa(ast->child[0], bgn, end);
 		genNfa(ast->child[0], end, end);
 	} else assert(0);
 }
