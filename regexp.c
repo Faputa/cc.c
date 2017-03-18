@@ -26,7 +26,7 @@ struct NfaNode {
 
 struct NfaEdge {
 	char accept;
-	NfaNode *end;
+	NfaNode *node;
 	NfaEdge *next;
 };
 
@@ -49,7 +49,7 @@ void addNfaEdge(char accept, NfaNode *bgn, NfaNode *end) {
 	NfaEdge *p = bgn->edge;
 	bgn->edge = (NfaEdge*)malloc(sizeof(NfaEdge));
 	bgn->edge->accept = accept;
-	bgn->edge->end = end;
+	bgn->edge->node = end;
 	bgn->edge->next = p;
 }
 
@@ -114,9 +114,9 @@ int runNfa(char *str, NfaNode *bgn, NfaNode *end) {
 	if(*str == '\0' && bgn == end) return 1;
 	for(NfaEdge *i = bgn->edge; i; i = i->next) {
 		if(i->accept == '\0' && bgn != end) {
-			r = runNfa(str, i->end, end);
+			r = runNfa(str, i->node, end);
 		} else if(i->accept == *str) {
-			r = runNfa(str + 1, i->end, end);
+			r = runNfa(str + 1, i->node, end);
 		}
 		if(r) break;
 	}
