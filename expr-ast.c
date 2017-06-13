@@ -1,9 +1,10 @@
-//±í´ïÊ½¼ÆËãÆ÷
+//è¡¨è¾¾å¼è®¡ç®—å™¨
 
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
 #define MAXSIZE 1000
+#define BUFSIZE 100
 
 enum {
 	//type
@@ -41,7 +42,7 @@ void next(void) {
 		else if(*p == '/') { tks = "/"; p++; return; }
 		else if(*p == '(') { tks = "("; p++; return; }
 		else if(*p == ')') { tks = ")"; p++; return; }
-		else { //Ìø¹ı²»ÄÜÊ¶±ğµÄ·ûºÅ
+		else { //è·³è¿‡ä¸èƒ½è¯†åˆ«çš„ç¬¦å·
 			p++;
 		}
 	}
@@ -65,7 +66,7 @@ int lev(char *opr) {
 		if(!strcmp(oprs[i], opr)) return lev;
 		else if(!strcmp(oprs[i], "")) lev++;
 	}
-	return 0; //ÆäËû·ûºÅ
+	return 0; //å…¶ä»–ç¬¦å·
 }
 
 Node* expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
@@ -77,7 +78,7 @@ Node* expr(char *last_opr) { //1 + 2 ^ 3 * 4 == (1 + (2 ^ (3) * (4)))
 	} else if(!strcmp(tks, "(")) {
 		next();
 		n = expr(")");
-		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("ÎŞ·¨Æ¥Åäµ½")"
+		if(!strcmp(tks, ")")) next(); else { printf("error!\n"); exit(-1); } //"("æ— æ³•åŒ¹é…åˆ°")"
 	} else if(!strcmp(tks, "-")) {
 		next();
 		n = newNode(SUB);
@@ -127,6 +128,23 @@ void printNode(Node *n, int indent) {
 	printNode(n->child[1], indent + 1);
 }
 
+void printNode2(Node *n, char *padding) {
+	switch(n->kind) {
+	case ATOM: printf("%d\n", n->value); return;
+	case ADD: printf("+\n"); break;
+	case SUB: printf("-\n"); break;
+	case MUL: printf("*\n"); break;
+	case DIV: printf("/\n"); break;
+	}
+	char strbuf[BUFSIZE];
+	printf("%s%s", padding, "â”œ");
+	sprintf(strbuf, "%s%s", padding, "|");
+	printNode2(n->child[0], strbuf);
+	printf("%s%s", padding, "â””");
+	sprintf(strbuf, "%s%s", padding, " ");
+	printNode2(n->child[1], strbuf);
+}
+
 int main(int argc, char *argv[]) {
 	if(argc != 2) { printf("error!\n"); exit(-1); }
 	p = argv[1];
@@ -134,6 +152,7 @@ int main(int argc, char *argv[]) {
 	Node *n = expr("");
 	if(strcmp(tks, ";") && strcmp(tks, "")) { printf("error!\n"); exit(-1); }
 	printf("%d\n", runNode(n));
-	printNode(n, 0);
+	// printNode(n, 0);
+	printNode2(n, "");
 	return 0;
 }
