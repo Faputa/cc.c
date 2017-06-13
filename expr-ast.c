@@ -138,7 +138,7 @@ void printNode2(Node *n, char *padding) {
 	}
 	char strbuf[BUFSIZE];
 	printf("%s%s", padding, "├");
-	sprintf(strbuf, "%s%s", padding, "|");
+	sprintf(strbuf, "%s%s", padding, "│");
 	printNode2(n->child[0], strbuf);
 	printf("%s%s", padding, "└");
 	sprintf(strbuf, "%s%s", padding, " ");
