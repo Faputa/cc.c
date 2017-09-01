@@ -144,13 +144,12 @@ void print_type(Type *type) {
 }
 
 Type* specifier() {
-	if(tki == Int) {
-		next();
-		return deriv_type(INT, NULL, 0);
-	} else if(tki == Char) {
-		next();
-		return deriv_type(CHAR, NULL, 0);
-	} else { printf("error!\n"); exit(-1); }
+	Type *t;
+	if(tki == Int) t = deriv_type(INT, NULL, 0);
+	else if(tki == Char) t = deriv_type(CHAR, NULL, 0);
+	else { printf("error!\n"); exit(-1); }
+	next();
+	return t;
 }
 
 int lev(char *opr) {
